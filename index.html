@@ -6,12 +6,12 @@
     <title>卡牌加法大挑戰 (Card Math Game)</title>
     <!-- Tailwind CSS for modern, beautiful UI -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
+    <!-- Google Fonts Inter & Fredoka for playful kid-friendly typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Noto Sans TC', 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            background: linear-gradient(135deg, #3b82f6 0%, #ec4899 100%);
             height: 100vh;
             width: 100vw;
             overflow: hidden;
@@ -39,158 +39,160 @@
         .card-hover {
             transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .card-hover:hover:not(.disabled) {
-            transform: translateY(-20px) scale(1.6) rotate(0deg) !important;
-            box-shadow: 0 30px 40px -10px rgba(217, 119, 6, 0.8), 0 0 25px rgba(251, 191, 36, 0.6);
-            z-index: 60;
-        }
         @keyframes pulse-glow {
-            0%, 100% { box-shadow: 0 0 15px rgba(234, 179, 8, 0.4); }
-            50% { box-shadow: 0 0 30px rgba(234, 179, 8, 0.8); }
+            0%, 100% { box-shadow: 0 0 20px rgba(250, 204, 21, 0.6); }
+            50% { box-shadow: 0 0 35px rgba(250, 204, 21, 1); }
         }
         .target-glow {
             animation: pulse-glow 2s infinite;
         }
-        /* Slay the Spire Style Card Styling */
+        /* Vibrant Kid-Friendly Card Styling */
         .sts-card {
-            background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
-            border: 2.5px solid #d97706;
-            box-shadow: -4px 8px 20px rgba(0,0,0,0.6), inset 0 0 12px rgba(245, 158, 11, 0.2);
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            border: 3px solid #facc15;
+            box-shadow: -4px 8px 25px rgba(0,0,0,0.4), inset 0 0 15px rgba(250, 204, 21, 0.3);
             position: relative;
-            border-radius: 0.85rem;
+            border-radius: 1rem;
         }
         .sts-energy {
-            background: radial-gradient(circle, #f59e0b 0%, #b45309 70%, #78350f 100%);
-            box-shadow: 0 0 8px rgba(245, 158, 11, 0.8), inset 0 2px 4px rgba(255, 255, 255, 0.6);
-            border: 2px solid #fef3c7;
+            background: radial-gradient(circle, #facc15 0%, #f59e0b 70%, #d97706 100%);
+            box-shadow: 0 0 10px rgba(250, 204, 21, 0.9), inset 0 2px 4px rgba(255, 255, 255, 0.7);
+            border: 2px solid #ffffff;
         }
     </style>
 </head>
-<body class="text-white select-none">
+<body class="text-white select-none text-base">
 
     <!-- Scalable Game Viewport container -->
     <div id="game-viewport">
 
         <!-- Header & Scoreboard -->
-        <header class="w-full flex justify-between items-center bg-slate-800/80 backdrop-blur border border-slate-700/60 p-3 rounded-2xl shadow-xl">
-            <div class="flex items-center space-x-2">
-                <span class="text-2xl">🃏</span>
+        <header class="w-full flex justify-between items-center bg-white/20 backdrop-blur-md border border-white/40 p-3 rounded-2xl shadow-xl">
+            <div class="flex items-center space-x-2.5">
+                <span class="text-2xl">⭐</span>
                 <div>
-                    <h1 class="text-base font-black bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">卡牌加法大挑戰</h1>
-                    <p class="text-[11px] text-slate-400">選 2 張卡，加總等於目標數字！</p>
+                    <h1 class="text-lg font-black text-yellow-200 drop-shadow">卡牌加法大挑戰</h1>
+                    <p class="text-sm text-yellow-100 font-bold">快把卡牌拖到上方格子吧！</p>
                 </div>
             </div>
             <div class="flex items-center space-x-2">
-                <div class="bg-slate-900/90 border border-slate-700 px-3 py-1 rounded-xl text-center">
-                    <div class="text-[10px] text-slate-400 font-semibold">分數</div>
-                    <div id="score" class="text-lg font-bold text-amber-400">0</div>
+                <div class="bg-indigo-950/80 border border-yellow-400 px-3 py-1 rounded-xl text-center shadow-inner">
+                    <div class="text-xs text-yellow-300 font-bold">分數</div>
+                    <div id="score" class="text-lg font-black text-yellow-400">0</div>
                 </div>
-                <div class="bg-slate-900/90 border border-slate-700 px-3 py-1 rounded-xl text-center">
-                    <div class="text-[10px] text-slate-400 font-semibold">時間</div>
-                    <div id="timer" class="text-lg font-bold text-indigo-400">60s</div>
+                <div class="bg-indigo-950/80 border border-indigo-400 px-3 py-1 rounded-xl text-center shadow-inner">
+                    <div class="text-xs text-indigo-300 font-bold">時間</div>
+                    <div id="timer" class="text-lg font-black text-indigo-300">60s</div>
                 </div>
             </div>
         </header>
 
         <!-- Main Game Area -->
-        <main class="w-full flex flex-col items-center justify-center my-auto py-2">
+        <main class="w-full flex flex-col items-center justify-center my-auto space-y-4">
             <!-- Target Number Display -->
-            <div class="text-center mb-3">
-                <span class="text-xs uppercase tracking-widest text-slate-400 font-semibold">目標數字 Target</span>
-                <!-- Target Display Box -->
-                <div id="target-drop-zone" class="target-glow mt-1.5 w-28 h-28 mx-auto bg-gradient-to-tr from-amber-500 to-yellow-400 rounded-3xl flex flex-col items-center justify-center text-slate-950 shadow-2xl border-4 border-yellow-200">
-                    <div id="target-number" class="text-5xl font-black">?</div>
+            <div class="text-center">
+                <span class="text-sm uppercase tracking-widest text-yellow-100 font-black drop-shadow">🎯 目標數字 TARGET</span>
+                <!-- Target Display Box (Enlarged) -->
+                <div id="target-drop-zone" class="target-glow mt-2 w-32 h-32 mx-auto bg-gradient-to-tr from-yellow-300 via-amber-400 to-yellow-500 rounded-3xl flex flex-col items-center justify-center text-slate-950 shadow-2xl border-4 border-white">
+                    <div id="target-number" class="text-6xl font-black">?</div>
                 </div>
-                <div id="status-message" class="mt-2 text-xs md:text-sm font-semibold text-slate-300 h-5 transition-all duration-300">
-                    請將 2 張卡片分別拖曳到下方對應格子
+                <div id="status-message" class="mt-2.5 text-sm font-bold text-yellow-100 h-6 transition-all duration-300 drop-shadow">
+                    將手牌移出選卡區即可拖拉，移至格子即可自動放入！
                 </div>
             </div>
 
-            <!-- Card-Sized Drop Slots -->
-            <div class="flex flex-col items-center space-y-2 bg-slate-900/60 border border-slate-700/80 p-3.5 rounded-3xl backdrop-blur shadow-xl w-full">
+            <!-- Card-Sized Drop Slots (Enlarged) -->
+            <div class="flex flex-col items-center space-y-2 bg-white/15 border border-white/30 p-4 rounded-3xl backdrop-blur-md shadow-2xl w-full">
                 <div class="flex justify-between w-full px-1 items-center">
-                    <span class="text-[11px] text-slate-400 font-bold uppercase tracking-wider">放入 2 張卡片</span>
-                    <button onclick="clearSelection()" class="px-2.5 py-0.5 bg-slate-700 hover:bg-slate-600 text-[11px] font-semibold rounded-lg text-slate-200 transition">清空</button>
+                    <span class="text-sm text-yellow-200 font-black uppercase tracking-wider flex items-center space-x-1">
+                        <span>📥</span> <span>放入 2 張卡片</span>
+                    </span>
+                    <button onclick="clearSelection()" class="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-sm font-black rounded-xl text-white shadow transition">清空重選</button>
                 </div>
                 <!-- Equation Layout: Grid 1, Plus, Grid 2, and Result -->
-                <div id="equation-container" class="flex items-center space-x-2 transition-all duration-300">
+                <div id="equation-container" class="flex items-center space-x-3 transition-all duration-300 py-1">
                     <!-- Slot 1 -->
                     <div id="slot-1" 
-                         ondragover="allowDrop(event)" 
-                         ondragleave="dropZoneLeave(event)"
-                         ondrop="dropCardToSlot(event, 0)"
-                         class="w-16 h-22 rounded-2xl border-2 border-dashed border-slate-500 flex flex-col items-center justify-center font-black text-xl bg-slate-800/60 text-slate-400 transition-all duration-300 shadow-inner">
-                        <span class="text-[10px] opacity-50 font-normal">格子 1</span>
-                        <span>-</span>
+                         class="w-20 h-28 rounded-2xl border-3 border-dashed border-yellow-300/60 flex flex-col items-center justify-center font-black text-lg bg-indigo-950/40 text-yellow-200 transition-all duration-300 shadow-inner">
+                        <span class="text-xs opacity-80 font-bold mb-1">格子 1</span>
+                        <span class="text-base">-</span>
                     </div>
                     
                     <!-- Plus Sign -->
-                    <div id="plus-sign" class="text-2xl font-black text-amber-400 transition-all duration-300 opacity-0 scale-75">
+                    <div id="plus-sign" class="text-3xl font-black text-yellow-300 transition-all duration-300 opacity-0 scale-75 drop-shadow">
                         +
                     </div>
 
                     <!-- Slot 2 -->
                     <div id="slot-2" 
-                         ondragover="allowDrop(event)" 
-                         ondragleave="dropZoneLeave(event)"
-                         ondrop="dropCardToSlot(event, 1)"
-                         class="w-16 h-22 rounded-2xl border-2 border-dashed border-slate-500 flex flex-col items-center justify-center font-black text-xl bg-slate-800/60 text-slate-400 transition-all duration-300 shadow-inner">
-                        <span class="text-[10px] opacity-50 font-normal">格子 2</span>
-                        <span>-</span>
+                         class="w-20 h-28 rounded-2xl border-3 border-dashed border-yellow-300/60 flex flex-col items-center justify-center font-black text-lg bg-indigo-950/40 text-yellow-200 transition-all duration-300 shadow-inner">
+                        <span class="text-xs opacity-80 font-bold mb-1">格子 2</span>
+                        <span class="text-base">-</span>
                     </div>
 
                     <!-- Result Display Area -->
-                    <div id="result-display" class="hidden items-center space-x-2 transition-all duration-300 animate-fade-in">
-                        <span class="text-2xl font-black text-slate-300">=</span>
-                        <div id="result-box" class="w-16 h-22 rounded-2xl border-2 border-amber-400/80 bg-amber-500/20 flex flex-col items-center justify-center font-black text-xl text-amber-300 shadow-xl">
-                            <span id="result-value">?</span>
+                    <div id="result-display" class="hidden items-center space-x-3 transition-all duration-300">
+                        <span class="text-3xl font-black text-yellow-300 drop-shadow">=</span>
+                        <div id="result-box" class="w-20 h-28 rounded-2xl border-3 border-yellow-400 bg-yellow-500/30 flex flex-col items-center justify-center font-black text-2xl text-yellow-200 shadow-2xl">
+                            <span id="result-value" class="text-3xl font-black">?</span>
                         </div>
                     </div>
                 </div>
             </div>
         </main>
 
-        <!-- Player Hand (1 to 9 Cards) styled like Slay the Spire fan layout -->
-        <footer class="w-full bg-slate-900/80 backdrop-blur-md border border-slate-700/80 p-3 rounded-3xl shadow-2xl">
+        <!-- Footer Hand (1 to 9 Cards) styled like Slay the Spire fan layout -->
+        <footer id="hand-footer" class="w-full bg-indigo-950/80 backdrop-blur-md border border-white/30 p-3 rounded-3xl shadow-2xl relative">
             <div class="flex justify-between items-center mb-2 px-1">
-                <span class="text-[11px] font-bold text-slate-300 tracking-wider flex items-center space-x-1.5">
-                    <span>⚔️</span> <span>殺戮尖塔風格手牌區 (可重複使用)</span>
+                <span class="text-sm font-black text-yellow-200 tracking-wider flex items-center space-x-1">
+                    <span>🌈</span> <span>手牌區 (數字 1-9 可重複使用)</span>
                 </span>
-                <button onclick="shuffleCards()" class="text-[11px] text-amber-400 hover:text-amber-300 font-semibold flex items-center space-x-1 transition bg-slate-800 px-2.5 py-1 rounded-xl border border-slate-700">
+                <button onclick="shuffleCards()" class="text-sm text-yellow-300 hover:text-yellow-200 font-bold flex items-center space-x-1 transition bg-amber-600/80 hover:bg-amber-600 px-3 py-1 rounded-xl border border-yellow-300 shadow">
                     <span>🔄 換目標</span>
                 </button>
             </div>
             <!-- Slay the Spire Hand Container -->
-            <div id="cards-container" class="flex justify-center items-end h-28 -space-x-7 px-2 pb-1 overflow-visible">
+            <div id="cards-container" class="flex justify-center items-end h-28 -space-x-5 px-1 pb-1 overflow-visible">
                 <!-- Cards will be dynamically injected here -->
             </div>
         </footer>
 
     </div>
 
+    <!-- Floating card following mouse -->
+    <div id="floating-card" class="fixed pointer-events-none z-50 hidden sts-card w-20 h-28 flex flex-col items-center justify-between p-2 shadow-2xl opacity-90 scale-125">
+        <div id="float-energy" class="sts-energy w-7 h-7 rounded-full flex items-center justify-center font-black text-white text-sm shadow-md absolute -top-3 -left-2 z-10"></div>
+        <div class="w-full h-14 bg-slate-950/80 rounded-lg border border-yellow-400/50 flex items-center justify-center mt-2 shadow-inner relative overflow-hidden">
+            <span id="float-value" class="text-3xl font-black text-yellow-300"></span>
+        </div>
+        <div class="w-full bg-indigo-900 border border-yellow-400 rounded-md py-1 px-1 text-center shadow-md">
+            <div class="text-xs font-black text-yellow-200">拖拉中</div>
+        </div>
+    </div>
+
     <!-- Game Over Modal -->
-    <div id="game-over-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md hidden items-center justify-center z-50 p-4">
-        <div class="bg-slate-900 border border-slate-700 max-w-sm w-full p-6 rounded-3xl text-center shadow-2xl">
-            <div class="text-5xl mb-3">🏆</div>
-            <h2 class="text-2xl font-black text-white mb-1">時間到！遊戲結束</h2>
-            <p class="text-slate-400 text-sm mb-6">你總共得到了以下分數：</p>
-            <div id="final-score" class="text-5xl font-black text-amber-400 mb-6">0</div>
-            <button onclick="restartGame()" class="w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 font-bold rounded-2xl shadow-lg shadow-indigo-500/30 transition">
-                再玩一次
+    <div id="game-over-modal" class="fixed inset-0 bg-indigo-950/85 backdrop-blur-md hidden items-center justify-center z-50 p-4">
+        <div class="bg-indigo-900 border-2 border-yellow-400 max-w-sm w-full p-6 rounded-3xl text-center shadow-2xl">
+            <div class="text-6xl mb-3">🏆</div>
+            <h2 class="text-2xl font-black text-white mb-2">時間到！遊戲結束</h2>
+            <p class="text-yellow-200 text-base mb-4 font-bold">你總共獲得了以下分數：</p>
+            <div id="final-score" class="text-6xl font-black text-yellow-400 mb-6 drop-shadow">0</div>
+            <button onclick="restartGame()" class="w-full py-4 bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 font-black text-lg rounded-2xl shadow-xl transition">
+                再玩一次！
             </button>
         </div>
     </div>
 
     <!-- Instructions Modal -->
-    <div id="start-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
-        <div class="bg-slate-900 border border-slate-700 max-w-md w-full p-6 md:p-8 rounded-3xl shadow-2xl text-center">
-            <div class="text-5xl mb-4">✨</div>
-            <h2 class="text-2xl font-black text-white mb-2">卡牌加法大挑戰</h2>
-            <p class="text-slate-300 text-sm leading-relaxed mb-6">
-                畫面會隨機出現一個目標數字（2 到 18）。請從你手上的 1 至 9 數字卡中挑選 <span class="text-amber-400 font-bold">2 張卡片</span>，使其總和相等於目標數字！限時 60 秒，看看你能拿到幾分！
+    <div id="start-modal" class="fixed inset-0 bg-indigo-950/85 backdrop-blur-md flex items-center justify-center z-50 p-4">
+        <div class="bg-indigo-900 border-2 border-yellow-400 max-w-md w-full p-6 md:p-8 rounded-3xl shadow-2xl text-center">
+            <div class="text-6xl mb-4">⭐</div>
+            <h2 class="text-3xl font-black text-yellow-300 mb-3 drop-shadow">卡牌加法大挑戰</h2>
+            <p class="text-yellow-100 text-base leading-relaxed mb-6 font-bold">
+                畫面上方會出現一個目標數字（2 到 18）。將滑鼠移到下方手牌區，卡片就會跟隨滑鼠，移到答題格子即可自動放卡合成目標數字！限時 60 秒！
             </p>
-            <button onclick="startGame()" class="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-lg rounded-2xl shadow-xl shadow-amber-500/20 transition">
-                開始遊戲
+            <button onclick="startGame()" class="w-full py-4 bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 font-black text-xl rounded-2xl shadow-2xl shadow-yellow-400/30 transition">
+                開始遊戲！
             </button>
         </div>
     </div>
@@ -236,8 +238,10 @@
         ];
 
         let droppedCards = [null, null];
+        let lastHoveredCardValue = null;
+        let isDraggingCard = false;
 
-        // Initialize Slay the Spire styled fan hand with touch and drag support
+        // Initialize Slay the Spire styled fan hand with mouse and touch interactions
         function initHand() {
             const container = document.getElementById('cards-container');
             container.innerHTML = '';
@@ -246,136 +250,154 @@
             handCards.forEach((card, index) => {
                 const centerIdx = (total - 1) / 2;
                 const offsetFromCenter = index - centerIdx;
-                const rotationDeg = offsetFromCenter * 6; 
-                const translateYPx = Math.pow(Math.abs(offsetFromCenter), 1.5) * 1.5; 
+                const rotationDeg = offsetFromCenter * 4; 
+                const translateYPx = Math.pow(Math.abs(offsetFromCenter), 1.5) * 1.0; 
 
                 const cardEl = document.createElement('div');
-                cardEl.className = `card-hover sts-card w-13 h-20 sm:w-14 sm:h-22 flex flex-col items-center justify-between p-1.5 cursor-grab shadow-2xl relative select-none`;
+                cardEl.className = `card-hover sts-card w-14 h-20 sm:w-16 sm:h-24 flex flex-col items-center justify-between p-1.5 cursor-pointer shadow-2xl relative select-none`;
                 cardEl.style.transform = `rotate(${rotationDeg}deg) translateY(${translateYPx}px)`;
                 cardEl.style.transformOrigin = `bottom center`;
-                cardEl.draggable = gameActive && !isEvaluating;
 
                 cardEl.innerHTML = `
                     <div class="sts-energy w-6 h-6 rounded-full flex items-center justify-center font-black text-white text-xs shadow-md absolute -top-2.5 -left-1.5 z-10">
                         ${card.value}
                     </div>
-                    <div class="w-full h-10 bg-slate-950/80 rounded-md border border-amber-500/40 flex items-center justify-center mt-2 shadow-inner relative overflow-hidden">
-                        <div class="absolute inset-0 bg-gradient-to-t from-amber-600/20 to-transparent"></div>
-                        <span class="text-2xl font-black text-amber-200 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">${card.value}</span>
+                    <div class="w-full h-10 bg-slate-950/80 rounded-lg border border-yellow-400/50 flex items-center justify-center mt-2 shadow-inner relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-t from-yellow-500/20 to-transparent"></div>
+                        <span class="text-2xl font-black text-yellow-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">${card.value}</span>
                     </div>
-                    <div class="w-full bg-slate-900/95 border border-amber-600/60 rounded-sm py-0.5 px-1 text-center shadow-md">
-                        <div class="text-[8px] font-bold text-amber-300 tracking-wider truncate">數字卡</div>
+                    <div class="w-full bg-indigo-900 border border-yellow-400/60 rounded-md py-0.5 px-1 text-center shadow-md">
+                        <div class="text-[10px] font-black text-yellow-200 tracking-wider truncate">數字卡</div>
                     </div>
                 `;
 
-                // Hover listener for desktop mouse
+                // Hover listener for card hand
                 cardEl.addEventListener('mouseenter', () => {
+                    if (!gameActive || isEvaluating) return;
+                    lastHoveredCardValue = card.value;
+                    isDraggingCard = true;
+                    showFloatingCard(card.value);
+
                     const allCards = container.children;
                     for (let i = 0; i < allCards.length; i++) {
                         if (i < index) {
                             const diff = index - i;
-                            allCards[i].style.transform = `rotate(${(i - centerIdx) * 6}deg) translateY(${Math.pow(Math.abs(i - centerIdx), 1.5) * 1.5}px) translateX(-${diff * 10}px)`;
+                            allCards[i].style.transform = `rotate(${(i - centerIdx) * 4}deg) translateY(${Math.pow(Math.abs(i - centerIdx), 1.5) * 1.0}px) translateX(-${diff * 8}px) scale(1)`;
                         } else if (i > index) {
                             const diff = i - index;
-                            allCards[i].style.transform = `rotate(${(i - centerIdx) * 6}deg) translateY(${Math.pow(Math.abs(i - centerIdx), 1.5) * 1.5}px) translateX(${diff * 10}px)`;
+                            allCards[i].style.transform = `rotate(${(i - centerIdx) * 4}deg) translateY(${Math.pow(Math.abs(i - centerIdx), 1.5) * 1.0}px) translateX(${diff * 8}px) scale(1)`;
+                        } else {
+                            allCards[i].style.transform = `rotate(0deg) translateY(-8px) scale(1.6) translateX(0px)`;
+                            allCards[i].style.zIndex = '50';
                         }
                     }
                 });
 
                 cardEl.addEventListener('mouseleave', () => {
-                    const allCards = container.children;
-                    for (let i = 0; i < allCards.length; i++) {
-                        const origOffset = i - centerIdx;
-                        allCards[i].style.transform = `rotate(${origOffset * 6}deg) translateY(${Math.pow(Math.abs(origOffset), 1.5) * 1.5}px) translateX(0px)`;
-                    }
-                });
-
-                // Desktop Drag event listeners
-                cardEl.addEventListener('dragstart', (e) => {
-                    if (!gameActive || isEvaluating) return;
-                    e.dataTransfer.setData('text/plain', card.value);
-                    cardEl.classList.add('opacity-50', 'scale-95');
-                });
-
-                cardEl.addEventListener('dragend', () => {
-                    cardEl.classList.remove('opacity-50', 'scale-95');
-                });
-
-                // Mobile Touch Drag & Drop Simulation / Tap Support
-                let touchClone = null;
-                cardEl.addEventListener('touchstart', (e) => {
-                    if (!gameActive || isEvaluating) return;
-                }, {passive: true});
-
-                cardEl.addEventListener('touchmove', (e) => {
-                    if (!gameActive || isEvaluating) return;
-                    const touch = e.touches[0];
-                    
-                    if (!touchClone) {
-                        touchClone = cardEl.cloneNode(true);
-                        touchClone.style.position = 'fixed';
-                        touchClone.style.zIndex = '1000';
-                        touchClone.style.width = cardEl.offsetWidth + 'px';
-                        touchClone.style.height = cardEl.offsetHeight + 'px';
-                        touchClone.style.pointerEvents = 'none';
-                        touchClone.style.opacity = '0.85';
-                        touchClone.style.transform = 'scale(1.2) rotate(0deg)';
-                        document.body.appendChild(touchClone);
-                    }
-                    
-                    touchClone.style.left = (touch.clientX - cardEl.offsetWidth / 2) + 'px';
-                    touchClone.style.top = (touch.clientY - cardEl.offsetHeight / 2) + 'px';
-                }, {passive: true});
-
-                cardEl.addEventListener('touchend', (e) => {
-                    if (!gameActive || isEvaluating) return;
-                    if (touchClone) {
-                        touchClone.remove();
-                        touchClone = null;
-                    }
-
-                    const touch = e.changedTouches[0];
-                    const slot1Elem = document.getElementById('slot-1');
-                    const slot2Elem = document.getElementById('slot-2');
-
-                    const rect1 = slot1Elem.getBoundingClientRect();
-                    const rect2 = slot2Elem.getBoundingClientRect();
-
-                    const x = touch.clientX;
-                    const y = touch.clientY;
-
-                    if (x >= rect1.left && x <= rect1.right && y >= rect1.top && y <= rect1.bottom) {
-                        droppedCards[0] = card.value;
-                        updateSlots();
-                        checkIfComplete();
-                    } else if (x >= rect2.left && x <= rect2.right && y >= rect2.top && y <= rect2.bottom) {
-                        droppedCards[1] = card.value;
-                        updateSlots();
-                        checkIfComplete();
-                    } else {
-                        if (droppedCards[0] === null) {
-                            droppedCards[0] = card.value;
-                        } else if (droppedCards[1] === null) {
-                            droppedCards[1] = card.value;
-                        }
-                        updateSlots();
-                        checkIfComplete();
-                    }
-                });
-
-                cardEl.addEventListener('click', () => {
-                    if (!gameActive || isEvaluating) return;
-                    if (droppedCards[0] === null) {
-                        droppedCards[0] = card.value;
-                    } else if (droppedCards[1] === null) {
-                        droppedCards[1] = card.value;
-                    }
-                    updateSlots();
-                    checkIfComplete();
+                    cardEl.style.zIndex = '1';
                 });
 
                 container.appendChild(cardEl);
             });
+        }
+
+        // Global mouse move for floating card and slot hover detection
+        document.addEventListener('mousemove', (e) => {
+            if (!gameActive || isEvaluating || !isDraggingCard || lastHoveredCardValue === null) return;
+
+            const floatCard = document.getElementById('floating-card');
+            floatCard.style.display = 'flex';
+            floatCard.style.left = (e.clientX - 25) + 'px';
+            floatCard.style.top = (e.clientY - 40) + 'px';
+
+            // Check if hovering over Slot 1 or Slot 2
+            const slot1 = document.getElementById('slot-1');
+            const slot2 = document.getElementById('slot-2');
+            const rect1 = slot1.getBoundingClientRect();
+            const rect2 = slot2.getBoundingClientRect();
+
+            if (e.clientX >= rect1.left && e.clientX <= rect1.right && e.clientY >= rect1.top && e.clientY <= rect1.bottom) {
+                droppedCards[0] = lastHoveredCardValue;
+                hideFloatingCard();
+                updateSlots();
+                checkIfComplete();
+            } else if (e.clientX >= rect2.left && e.clientX <= rect2.right && e.clientY >= rect2.top && e.clientY <= rect2.bottom) {
+                droppedCards[1] = lastHoveredCardValue;
+                hideFloatingCard();
+                updateSlots();
+                checkIfComplete();
+            }
+        });
+
+        // Touch support for mobile devices
+        document.addEventListener('touchmove', (e) => {
+            if (!gameActive || isEvaluating) return;
+            const touch = e.touches[0];
+            
+            const elem = document.elementFromPoint(touch.clientX, touch.clientY);
+            if (elem) {
+                const cardEl = elem.closest('.sts-card');
+                if (cardEl && cardEl.parentNode.id === 'cards-container') {
+                    const valDiv = cardEl.querySelector('.text-xl');
+                    if (valDiv) {
+                        lastHoveredCardValue = parseInt(valDiv.innerText);
+                        showFloatingCard(lastHoveredCardValue);
+                        const floatCard = document.getElementById('floating-card');
+                        floatCard.style.display = 'flex';
+                        floatCard.style.left = (touch.clientX - 25) + 'px';
+                        floatCard.style.top = (touch.clientY - 40) + 'px';
+                    }
+                }
+            }
+
+            const slot1 = document.getElementById('slot-1');
+            const slot2 = document.getElementById('slot-2');
+            const rect1 = slot1.getBoundingClientRect();
+            const rect2 = slot2.getBoundingClientRect();
+
+            if (touch.clientX >= rect1.left && touch.clientX <= rect1.right && touch.clientY >= rect1.top && touch.clientY <= rect1.bottom) {
+                if (lastHoveredCardValue !== null) {
+                    droppedCards[0] = lastHoveredCardValue;
+                    hideFloatingCard();
+                    updateSlots();
+                    checkIfComplete();
+                }
+            } else if (touch.clientX >= rect2.left && touch.clientX <= rect2.right && touch.clientY >= rect2.top && touch.clientY <= rect2.bottom) {
+                if (lastHoveredCardValue !== null) {
+                    droppedCards[1] = lastHoveredCardValue;
+                    hideFloatingCard();
+                    updateSlots();
+                    checkIfComplete();
+                }
+            }
+        }, {passive: true});
+
+        document.addEventListener('touchend', () => {
+            hideFloatingCard();
+            isDraggingCard = false;
+        });
+
+        function showFloatingCard(val) {
+            document.getElementById('float-value').innerText = val;
+            document.getElementById('float-energy').innerText = val;
+            document.getElementById('floating-card').style.display = 'flex';
+        }
+
+        function hideFloatingCard() {
+            document.getElementById('floating-card').style.display = 'none';
+            isDraggingCard = false;
+            lastHoveredCardValue = null;
+
+            const container = document.getElementById('cards-container');
+            if (container) {
+                const total = container.children.length;
+                const centerIdx = (total - 1) / 2;
+                Array.from(container.children).forEach((child, i) => {
+                    const origOffset = i - centerIdx;
+                    child.style.transform = `rotate(${origOffset * 5}deg) translateY(${Math.pow(Math.abs(origOffset), 1.5) * 1.2}px) translateX(0px) scale(1)`;
+                    child.style.zIndex = '1';
+                });
+            }
         }
 
         function generateTarget() {
@@ -386,31 +408,6 @@
             document.getElementById('target-number').innerText = targetNumber;
         }
 
-        function allowDrop(e) {
-            e.preventDefault();
-            if (isEvaluating) return;
-            const slot = e.currentTarget;
-            slot.classList.add('border-indigo-400', 'bg-indigo-950/40', 'scale-105');
-        }
-
-        function dropZoneLeave(e) {
-            const slot = e.currentTarget;
-            slot.classList.remove('border-indigo-400', 'bg-indigo-950/40', 'scale-105');
-        }
-
-        function dropCardToSlot(e, slotIndex) {
-            e.preventDefault();
-            dropZoneLeave(e);
-            if (!gameActive || isEvaluating) return;
-
-            const cardValue = parseInt(e.dataTransfer.getData('text/plain'));
-            if (!isNaN(cardValue)) {
-                droppedCards[slotIndex] = cardValue;
-                updateSlots();
-                checkIfComplete();
-            }
-        }
-
         function updateSlots() {
             const slot1 = document.getElementById('slot-1');
             const slot2 = document.getElementById('slot-2');
@@ -418,19 +415,39 @@
             const resultDisplay = document.getElementById('result-display');
 
             if (droppedCards[0] !== null) {
-                slot1.innerHTML = `<span class="text-[9px] absolute top-1.5 left-2 font-semibold opacity-60">${droppedCards[0]}</span><span>${droppedCards[0]}</span>`;
-                slot1.className = "w-16 h-22 rounded-2xl border-2 border-indigo-400 flex flex-col items-center justify-center font-black text-xl text-white bg-indigo-600 shadow-xl relative transition-all duration-300";
+                slot1.innerHTML = `
+                    <div class="sts-energy w-7 h-7 rounded-full flex items-center justify-center font-black text-white text-sm shadow-md absolute -top-3 -left-2 z-10">
+                        ${droppedCards[0]}
+                    </div>
+                    <div class="w-full h-14 bg-slate-950/80 rounded-lg border border-yellow-400/50 flex items-center justify-center mt-2 shadow-inner relative overflow-hidden">
+                        <span class="text-3xl font-black text-yellow-300">${droppedCards[0]}</span>
+                    </div>
+                    <div class="w-full bg-indigo-900 border border-yellow-400 rounded-md py-1 px-1 text-center shadow-md mt-1">
+                        <div class="text-xs font-black text-yellow-200">數字卡</div>
+                    </div>
+                `;
+                slot1.className = "w-20 h-28 rounded-2xl sts-card flex flex-col items-center justify-between p-2 shadow-2xl relative transition-all duration-300";
             } else {
-                slot1.innerHTML = `<span class="text-[10px] opacity-50 font-normal">格子 1</span><span>-</span>`;
-                slot1.className = "w-16 h-22 rounded-2xl border-2 border-dashed border-slate-500 flex flex-col items-center justify-center font-black text-xl bg-slate-800/60 text-slate-400 transition-all duration-300 shadow-inner relative";
+                slot1.innerHTML = `<span class="text-xs opacity-80 font-bold mb-1">格子 1</span><span class="text-base">-</span>`;
+                slot1.className = "w-20 h-28 rounded-2xl border-3 border-dashed border-yellow-300/60 flex flex-col items-center justify-center font-black text-lg bg-indigo-950/40 text-yellow-200 transition-all duration-300 shadow-inner relative";
             }
 
             if (droppedCards[1] !== null) {
-                slot2.innerHTML = `<span class="text-[9px] absolute top-1.5 left-2 font-semibold opacity-60">${droppedCards[1]}</span><span>${droppedCards[1]}</span>`;
-                slot2.className = "w-16 h-22 rounded-2xl border-2 border-indigo-400 flex flex-col items-center justify-center font-black text-xl text-white bg-indigo-600 shadow-xl relative transition-all duration-300";
+                slot2.innerHTML = `
+                    <div class="sts-energy w-7 h-7 rounded-full flex items-center justify-center font-black text-white text-sm shadow-md absolute -top-3 -left-2 z-10">
+                        ${droppedCards[1]}
+                    </div>
+                    <div class="w-full h-14 bg-slate-950/80 rounded-lg border border-yellow-400/50 flex items-center justify-center mt-2 shadow-inner relative overflow-hidden">
+                        <span class="text-3xl font-black text-yellow-300">${droppedCards[1]}</span>
+                    </div>
+                    <div class="w-full bg-indigo-900 border border-yellow-400 rounded-md py-1 px-1 text-center shadow-md mt-1">
+                        <div class="text-xs font-black text-yellow-200">數字卡</div>
+                    </div>
+                `;
+                slot2.className = "w-20 h-28 rounded-2xl sts-card flex flex-col items-center justify-between p-2 shadow-2xl relative transition-all duration-300";
             } else {
-                slot2.innerHTML = `<span class="text-[10px] opacity-50 font-normal">格子 2</span><span>-</span>`;
-                slot2.className = "w-16 h-22 rounded-2xl border-2 border-dashed border-slate-500 flex flex-col items-center justify-center font-black text-xl bg-slate-800/60 text-slate-400 transition-all duration-300 shadow-inner relative";
+                slot2.innerHTML = `<span class="text-xs opacity-80 font-bold mb-1">格子 2</span><span class="text-base">-</span>`;
+                slot2.className = "w-20 h-28 rounded-2xl border-3 border-dashed border-yellow-300/60 flex flex-col items-center justify-center font-black text-lg bg-indigo-950/40 text-yellow-200 transition-all duration-300 shadow-inner relative";
             }
 
             if (droppedCards[0] !== null || droppedCards[1] !== null) {
@@ -447,6 +464,7 @@
         function clearSelection() {
             if (isEvaluating) return;
             droppedCards = [null, null];
+            hideFloatingCard();
             updateSlots();
         }
 
@@ -465,23 +483,23 @@
             const resultValue = document.getElementById('result-value');
             const msgEl = document.getElementById('status-message');
 
-            msgEl.innerText = "計算中...";
-            msgEl.className = "mt-2 text-xs md:text-sm font-bold text-amber-400 h-5 transition-all duration-300";
+            msgEl.innerText = "✨ 計算中...";
+            msgEl.className = "mt-2 text-xs font-black text-amber-200 h-5 transition-all duration-300 drop-shadow";
 
-            slot1.classList.add('ring-4', 'ring-amber-400', 'scale-105', 'bg-amber-600');
+            slot1.classList.add('ring-4', 'ring-yellow-300', 'scale-105', 'bg-amber-100');
 
             setTimeout(() => {
-                slot1.classList.remove('ring-4', 'ring-amber-400', 'scale-105', 'bg-amber-600');
-                plusSign.classList.add('scale-125', 'text-yellow-300', 'drop-shadow-[0_0_10px_rgba(234,179,8,0.8)]');
+                slot1.classList.remove('ring-4', 'ring-yellow-300', 'scale-105', 'bg-amber-100');
+                plusSign.classList.add('scale-125', 'text-yellow-300', 'drop-shadow-[0_0_12px_rgba(250,204,21,0.9)]');
             }, 500);
 
             setTimeout(() => {
-                plusSign.classList.remove('scale-125', 'text-yellow-300', 'drop-shadow-[0_0_10px_rgba(234,179,8,0.8)]');
-                slot2.classList.add('ring-4', 'ring-amber-400', 'scale-105', 'bg-amber-600');
+                plusSign.classList.remove('scale-125', 'text-yellow-300', 'drop-shadow-[0_0_12px_rgba(250,204,21,0.9)]');
+                slot2.classList.add('ring-4', 'ring-yellow-300', 'scale-105', 'bg-amber-100');
             }, 1000);
 
             setTimeout(() => {
-                slot2.classList.remove('ring-4', 'ring-amber-400', 'scale-105', 'bg-amber-600');
+                slot2.classList.remove('ring-4', 'ring-yellow-300', 'scale-105', 'bg-amber-100');
                 
                 const val1 = droppedCards[0];
                 const val2 = droppedCards[1];
@@ -494,30 +512,30 @@
                 if (sum === targetNumber) {
                     score += 1;
                     document.getElementById('score').innerText = score;
-                    msgEl.innerText = `🎉 答對了！ ${val1} + ${val2} = ${sum} (+1分)`;
-                    msgEl.className = "mt-2 text-xs md:text-sm font-bold text-emerald-400 h-5 transition-all duration-300";
+                    msgEl.innerText = `🎉 答對了好棒！ ${val1} + ${val2} = ${sum} (+1分)`;
+                    msgEl.className = "mt-2 text-xs font-black text-emerald-300 h-5 transition-all duration-300 drop-shadow";
 
                     setTimeout(() => {
                         droppedCards = [null, null];
                         resultDisplay.classList.add('hidden');
                         resultDisplay.classList.remove('flex');
-                        msgEl.innerText = "請將 2 張卡片分別拖曳到下方對應格子";
-                        msgEl.className = "mt-2 text-xs md:text-sm font-semibold text-slate-300 h-5 transition-all duration-300";
+                        msgEl.innerText = "請將 2 張卡片拖進下方對應格子";
+                        msgEl.className = "mt-2 text-xs font-bold text-yellow-200 h-5 transition-all duration-300 drop-shadow";
                         isEvaluating = false;
                         updateSlots();
                         generateTarget();
                     }, 1200);
 
                 } else {
-                    msgEl.innerText = `❌ 總和是 ${sum}，不是 ${targetNumber}，請再試一次！`;
-                    msgEl.className = "mt-2 text-xs md:text-sm font-bold text-rose-400 h-5 transition-all duration-300";
+                    msgEl.innerText = `❌ 總和是 ${sum}，不是 ${targetNumber}，再試一次！`;
+                    msgEl.className = "mt-2 text-xs font-black text-rose-300 h-5 transition-all duration-300 drop-shadow";
 
                     setTimeout(() => {
                         droppedCards = [null, null];
                         resultDisplay.classList.add('hidden');
                         resultDisplay.classList.remove('flex');
-                        msgEl.innerText = "請將 2 張卡片分別拖曳到下方對應格子";
-                        msgEl.className = "mt-2 text-xs md:text-sm font-semibold text-slate-300 h-5 transition-all duration-300";
+                        msgEl.innerText = "請將 2 張卡片拖進下方對應格子";
+                        msgEl.className = "mt-2 text-xs font-bold text-yellow-200 h-5 transition-all duration-300 drop-shadow";
                         isEvaluating = false;
                         updateSlots();
                     }, 1500);
@@ -528,13 +546,14 @@
         function shuffleCards() {
             if (!gameActive || isEvaluating) return;
             droppedCards = [null, null];
+            hideFloatingCard();
             updateSlots();
             generateTarget();
             
             const msgEl = document.getElementById('status-message');
             msgEl.innerText = "🔄 已切換新目標數字！";
             setTimeout(() => {
-                msgEl.innerText = "請將 2 張卡片分別拖曳到下方對應格子";
+                msgEl.innerText = "請將 2 張卡片拖進下方對應格子";
             }, 1000);
         }
 
@@ -566,6 +585,7 @@
 
         function endGame() {
             gameActive = false;
+            hideFloatingCard();
             document.getElementById('final-score').innerText = score;
             document.getElementById('game-over-modal').style.display = 'flex';
         }
