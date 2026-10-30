@@ -152,6 +152,16 @@
                 </button>
             </div>
             <!-- Slay the Spire Hand Container -->
+        <footer id="hand-footer" class="w-full bg-indigo-950/80 backdrop-blur-md border border-white/30 p-3 rounded-3xl shadow-2xl relative">
+            <div class="flex justify-between items-center mb-2 px-1">
+                <span class="text-sm font-black text-yellow-200 tracking-wider flex items-center space-x-1">
+                    <span>🌈</span> <span>手牌區 (數字 1-9 可重複使用)</span>
+                </span>
+                <button onclick="shuffleCards()" class="text-sm text-yellow-300 hover:text-yellow-200 font-bold flex items-center space-x-1 transition bg-amber-600/80 hover:bg-amber-600 px-3 py-1 rounded-xl border border-yellow-300 shadow">
+                    <span>🔄 換目標</span>
+                </button>
+            </div>
+            <!-- Slay the Spire Hand Container -->
             <div id="cards-container" class="flex justify-center items-end h-28 -space-x-5 px-1 pb-1 overflow-visible">
                 <!-- Cards will be dynamically injected here -->
             </div>
@@ -159,14 +169,14 @@
 
     </div>
 
-    <!-- Floating card following mouse -->
-    <div id="floating-card" class="fixed pointer-events-none z-50 hidden sts-card w-20 h-28 flex flex-col items-center justify-between p-2 shadow-2xl opacity-90 scale-125">
-        <div id="float-energy" class="sts-energy w-7 h-7 rounded-full flex items-center justify-center font-black text-white text-sm shadow-md absolute -top-3 -left-2 z-10"></div>
-        <div class="w-full h-14 bg-slate-950/80 rounded-lg border border-yellow-400/50 flex items-center justify-center mt-2 shadow-inner relative overflow-hidden">
-            <span id="float-value" class="text-3xl font-black text-yellow-300"></span>
+    <!-- Floating card following mouse / finger with 50% larger preview -->
+    <div id="floating-card" class="fixed pointer-events-none z-50 hidden sts-card w-28 h-40 flex flex-col items-center justify-between p-3 shadow-2xl opacity-95 scale-150 transform -translate-x-1/2 -translate-y-full">
+        <div id="float-energy" class="sts-energy w-9 h-9 rounded-full flex items-center justify-center font-black text-white text-base shadow-md absolute -top-3 -left-2 z-10"></div>
+        <div class="w-full h-20 bg-slate-950/80 rounded-xl border border-yellow-400/50 flex items-center justify-center mt-3 shadow-inner relative overflow-hidden">
+            <span id="float-value" class="text-5xl font-black text-yellow-300"></span>
         </div>
-        <div class="w-full bg-indigo-900 border border-yellow-400 rounded-md py-1 px-1 text-center shadow-md">
-            <div class="text-xs font-black text-yellow-200">拖拉中</div>
+        <div class="w-full bg-indigo-900 border border-yellow-400 rounded-lg py-1 px-1 text-center shadow-md">
+            <div class="text-xs font-black text-yellow-200">選取中</div>
         </div>
     </div>
 
@@ -272,11 +282,11 @@
                 `;
 
                 // Hover listener for card hand
-                cardEl.addEventListener('mouseenter', () => {
+                cardEl.addEventListener('mouseenter', (e) => {
                     if (!gameActive || isEvaluating) return;
                     lastHoveredCardValue = card.value;
                     isDraggingCard = true;
-                    showFloatingCard(card.value);
+                    showFloatingCard(card.value, e.clientX, e.clientY);
 
                     const allCards = container.children;
                     for (let i = 0; i < allCards.length; i++) {
@@ -307,7 +317,7 @@
             handleDragMove(e.clientX, e.clientY);
         });
 
-        // Touch support mapping finger to mouse functionality
+        // Touch support mapping finger to mouse functionality with 50% larger preview
         document.addEventListener('touchmove', (e) => {
             if (!gameActive || isEvaluating) return;
             const touch = e.touches[0];
@@ -320,7 +330,7 @@
                     if (valDiv) {
                         lastHoveredCardValue = parseInt(valDiv.innerText);
                         isDraggingCard = true;
-                        showFloatingCard(lastHoveredCardValue);
+                        showFloatingCard(lastHoveredCardValue, touch.clientX, touch.clientY);
                     }
                 }
             }
@@ -356,8 +366,8 @@
         function handleDragMove(clientX, clientY) {
             const floatCard = document.getElementById('floating-card');
             floatCard.style.display = 'flex';
-            floatCard.style.left = (clientX - 25) + 'px';
-            floatCard.style.top = (clientY - 40) + 'px';
+            floatCard.style.left = clientX + 'px';
+            floatCard.style.top = (clientY - 20) + 'px';
 
             const slot1 = document.getElementById('slot-1');
             const slot2 = document.getElementById('slot-2');
@@ -377,10 +387,13 @@
             }
         }
 
-        function showFloatingCard(val) {
+        function showFloatingCard(val, clientX, clientY) {
             document.getElementById('float-value').innerText = val;
             document.getElementById('float-energy').innerText = val;
-            document.getElementById('floating-card').style.display = 'flex';
+            const floatCard = document.getElementById('floating-card');
+            floatCard.style.display = 'flex';
+            floatCard.style.left = (clientX || 0) + 'px';
+            floatCard.style.top = ((clientY || 0) - 20) + 'px';
         }
 
         function hideFloatingCard() {
