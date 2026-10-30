@@ -1,1 +1,563 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>卡牌加法大挑戰 (Card Math Game)</title>
+    <!-- Tailwind CSS for modern, beautiful UI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            min-height: 100vh;
+        }
+        .card-hover {
+            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .card-hover:hover:not(.disabled) {
+            transform: translateY(-65px) scale(1.6) rotate(0deg) !important;
+            box-shadow: 0 40px 50px -10px rgba(217, 119, 6, 0.8), 0 0 35px rgba(251, 191, 36, 0.6);
+            z-index: 60;
+        }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(234, 179, 8, 0.4); }
+            50% { box-shadow: 0 0 30px rgba(234, 179, 8, 0.8); }
+        }
+        .target-glow {
+            animation: pulse-glow 2s infinite;
+        }
+        /* Slay the Spire Style Card Styling */
+        .sts-card {
+            background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
+            border: 3px solid #d97706;
+            box-shadow: -5px 10px 25px rgba(0,0,0,0.6), inset 0 0 15px rgba(245, 158, 11, 0.2);
+            position: relative;
+            border-radius: 1rem;
+        }
+        .sts-energy {
+            background: radial-gradient(circle, #f59e0b 0%, #b45309 70%, #78350f 100%);
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.8), inset 0 2px 4px rgba(255, 255, 255, 0.6);
+            border: 2px solid #fef3c7;
+        }
+    </style>
+</head>
+<body class="text-white flex flex-col items-center justify-between min-h-screen p-4 md:p-6 select-none">
 
+    <!-- Header & Scoreboard -->
+    <header class="w-full max-w-2xl flex justify-between items-center bg-slate-800/80 backdrop-blur border border-slate-700/60 p-4 rounded-2xl shadow-xl">
+        <div class="flex items-center space-x-3">
+            <span class="text-3xl">🃏</span>
+            <div>
+                <h1 class="text-lg md:text-xl font-black bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">卡牌加法大挑戰</h1>
+                <p class="text-xs text-slate-400">選 2 張卡，加總等於目標數字！</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-4">
+            <div class="bg-slate-900/90 border border-slate-700 px-4 py-2 rounded-xl text-center">
+                <div class="text-xs text-slate-400 font-semibold">分數</div>
+                <div id="score" class="text-xl font-bold text-amber-400">0</div>
+            </div>
+            <div class="bg-slate-900/90 border border-slate-700 px-4 py-2 rounded-xl text-center">
+                <div class="text-xs text-slate-400 font-semibold">時間</div>
+                <div id="timer" class="text-xl font-bold text-indigo-400">60s</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Game Area -->
+    <main class="w-full max-w-2xl flex flex-col items-center justify-center my-auto py-8">
+        <!-- Target Number Display -->
+        <div class="text-center mb-6">
+            <span class="text-sm uppercase tracking-widest text-slate-400 font-semibold">目標數字 Target</span>
+            <!-- Target Display Box -->
+            <div id="target-drop-zone" class="target-glow mt-2 w-36 h-36 md:w-44 md:h-44 mx-auto bg-gradient-to-tr from-amber-500 to-yellow-400 rounded-3xl flex flex-col items-center justify-center text-slate-950 shadow-2xl border-4 border-yellow-200">
+                <div id="target-number" class="text-6xl md:text-7xl font-black">?</div>
+            </div>
+            <div id="status-message" class="mt-3 text-sm md:text-base font-semibold text-slate-300 h-6 transition-all duration-300">
+                請將 2 張卡片分別拖曳到下方對應格子
+            </div>
+        </div>
+
+        <!-- Card-Sized Drop Slots -->
+        <div class="flex flex-col items-center space-y-3 bg-slate-900/60 border border-slate-700/80 p-5 rounded-3xl backdrop-blur shadow-xl w-full max-w-lg">
+            <div class="flex justify-between w-full px-2 items-center">
+                <span class="text-xs text-slate-400 font-bold uppercase tracking-wider">放入 2 張卡片</span>
+                <button onclick="clearSelection()" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-xs font-semibold rounded-lg text-slate-200 transition">清空</button>
+            </div>
+            <!-- Equation Layout: Grid 1, Plus, Grid 2, and Result -->
+            <div id="equation-container" class="flex items-center space-x-3 transition-all duration-300">
+                <!-- Slot 1 -->
+                <div id="slot-1" 
+                     ondragover="allowDrop(event)" 
+                     ondragleave="dropZoneLeave(event)"
+                     ondrop="dropCardToSlot(event, 0)"
+                     class="w-20 h-24 sm:w-24 sm:h-32 rounded-2xl border-2 border-dashed border-slate-500 flex flex-col items-center justify-center font-black text-2xl md:text-3xl bg-slate-800/60 text-slate-400 transition-all duration-300 shadow-inner">
+                    <span class="text-xs opacity-50 font-normal">格子 1</span>
+                    <span>-</span>
+                </div>
+                
+                <!-- Plus Sign (Visible only when evaluating or placed) -->
+                <div id="plus-sign" class="text-3xl md:text-4xl font-black text-amber-400 transition-all duration-300 opacity-0 scale-75">
+                    +
+                </div>
+
+                <!-- Slot 2 -->
+                <div id="slot-2" 
+                     ondragover="allowDrop(event)" 
+                     ondragleave="dropZoneLeave(event)"
+                     ondrop="dropCardToSlot(event, 1)"
+                     class="w-20 h-24 sm:w-24 sm:h-32 rounded-2xl border-2 border-dashed border-slate-500 flex flex-col items-center justify-center font-black text-2xl md:text-3xl bg-slate-800/60 text-slate-400 transition-all duration-300 shadow-inner">
+                    <span class="text-xs opacity-50 font-normal">格子 2</span>
+                    <span>-</span>
+                </div>
+
+                <!-- Result Display Area -->
+                <div id="result-display" class="hidden items-center space-x-2 transition-all duration-300 animate-fade-in">
+                    <span class="text-2xl md:text-3xl font-black text-slate-300">=</span>
+                    <div id="result-box" class="w-20 h-24 sm:w-24 sm:h-32 rounded-2xl border-2 border-amber-400/80 bg-amber-500/20 flex flex-col items-center justify-center font-black text-2xl md:text-3xl text-amber-300 shadow-xl">
+                        <span id="result-value">?</span>
+                    </div>
+                </div>
+            </div>
+    <!-- Player Hand (1 to 9 Cards) styled like Slay the Spire fan layout -->
+    <footer class="w-full max-w-4xl bg-slate-900/80 backdrop-blur-md border border-slate-700/80 p-4 md:p-6 rounded-3xl shadow-2xl pb-6">
+        <div class="flex justify-between items-center mb-4 px-2">
+            <span class="text-xs md:text-sm font-bold text-slate-300 tracking-wider flex items-center space-x-2">
+                <span>⚔️</span> <span>殺戮尖塔風格手牌區 (1 - 9，可重複使用)</span>
+            </span>
+            <button onclick="shuffleCards()" class="text-xs text-amber-400 hover:text-amber-300 font-semibold flex items-center space-x-1 transition bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700">
+                <span>🔄 重新整理目標</span>
+            </button>
+        </div>
+        <!-- Slay the Spire Hand Container with tighter overlapping and pronounced arc -->
+        <div id="cards-container" class="flex justify-center items-end h-36 md:h-40 -space-x-10 sm:-space-x-12 md:-space-x-14 px-4 pb-2 overflow-visible">
+            <!-- Cards will be dynamically injected here -->
+        </div>
+    </footer>
+    </main>
+
+    <!-- Game Over Modal -->
+    <div id="game-over-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md hidden items-center justify-center z-50 p-4">
+        <div class="bg-slate-900 border border-slate-700 max-w-sm w-full p-6 rounded-3xl text-center shadow-2xl">
+            <div class="text-5xl mb-3">🏆</div>
+            <h2 class="text-2xl font-black text-white mb-1">時間到！遊戲結束</h2>
+            <p class="text-slate-400 text-sm mb-6">你總共得到了以下分數：</p>
+            <div id="final-score" class="text-5xl font-black text-amber-400 mb-6">0</div>
+            <button onclick="restartGame()" class="w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 font-bold rounded-2xl shadow-lg shadow-indigo-500/30 transition">
+                再玩一次
+            </button>
+        </div>
+    </div>
+
+    <!-- Instructions Modal (First load or toggle) -->
+    <div id="start-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+        <div class="bg-slate-900 border border-slate-700 max-w-md w-full p-6 md:p-8 rounded-3xl shadow-2xl text-center">
+            <div class="text-5xl mb-4">✨</div>
+            <h2 class="text-2xl font-black text-white mb-2">卡牌加法大挑戰</h2>
+            <p class="text-slate-300 text-sm leading-relaxed mb-6">
+                畫面會隨機出現一個目標數字（2 到 18）。請從你手上的 1 至 9 數字卡中挑選 <span class="text-amber-400 font-bold">2 張卡片</span>，使其總和相等於目標數字！限時 60 秒，看看你能拿到幾分！
+            </p>
+            <button onclick="startGame()" class="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-lg rounded-2xl shadow-xl shadow-amber-500/20 transition">
+                開始遊戲
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Game State Variables
+        let score = 0;
+        let timeLeft = 60;
+        let timerInterval = null;
+        let gameActive = false;
+        let targetNumber = 0;
+        let isEvaluating = false;
+        
+        // Hand cards: standard 1 to 9 (reusable)
+        let handCards = [
+            { id: 1, value: 1 },
+            { id: 2, value: 2 },
+            { id: 3, value: 3 },
+            { id: 4, value: 4 },
+            { id: 5, value: 5 },
+            { id: 6, value: 6 },
+            { id: 7, value: 7 },
+            { id: 8, value: 8 },
+            { id: 9, value: 9 }
+        ];
+
+        let droppedCards = [null, null]; // Stores card values for slot 0 and slot 1
+
+        // Initialize Slay the Spire styled fan hand with Touch and Drag support
+        function initHand() {
+            const container = document.getElementById('cards-container');
+            container.innerHTML = '';
+
+            const total = handCards.length;
+            handCards.forEach((card, index) => {
+                const centerIdx = (total - 1) / 2;
+                const offsetFromCenter = index - centerIdx;
+                const rotationDeg = offsetFromCenter * 7; 
+                // Reduced vertical lift on hover as requested earlier
+                const translateYPx = Math.pow(Math.abs(offsetFromCenter), 1.5) * 2; 
+
+                const cardEl = document.createElement('div');
+                cardEl.className = `card-hover sts-card w-16 h-24 sm:w-22 sm:h-32 md:w-24 md:h-34 flex flex-col items-center justify-between p-2 cursor-grab shadow-2xl relative select-none`;
+                cardEl.style.transform = `rotate(${rotationDeg}deg) translateY(${translateYPx}px)`;
+                cardEl.style.transformOrigin = `bottom center`;
+                cardEl.draggable = gameActive && !isEvaluating;
+
+                cardEl.innerHTML = `
+                    <!-- Top Left Energy Orb with card value -->
+                    <div class="sts-energy w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-black text-white text-xs sm:text-sm shadow-md absolute -top-3 -left-2 z-10">
+                        ${card.value}
+                    </div>
+                    <!-- Card Artwork / Center Art Frame -->
+                    <div class="w-full h-11 sm:h-14 bg-slate-950/80 rounded-lg border border-amber-500/40 flex items-center justify-center mt-3 shadow-inner relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-t from-amber-600/20 to-transparent"></div>
+                        <span class="text-2xl sm:text-3xl font-black text-amber-200 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">${card.value}</span>
+                    </div>
+                    <!-- Card Description Banner (Spire Style) -->
+                    <div class="w-full bg-slate-900/95 border border-amber-600/60 rounded-md py-1 px-1 text-center shadow-md">
+                        <div class="text-[9px] sm:text-[10px] font-bold text-amber-300 tracking-wider truncate">攻擊牌</div>
+                    </div>
+                `;
+
+                // Hover listener for desktop mouse
+                cardEl.addEventListener('mouseenter', () => {
+                    const allCards = container.children;
+                    for (let i = 0; i < allCards.length; i++) {
+                        if (i < index) {
+                            const diff = index - i;
+                            allCards[i].style.transform = `rotate(${(i - centerIdx) * 7}deg) translateY(${Math.pow(Math.abs(i - centerIdx), 1.5) * 2}px) translateX(-${diff * 14}px)`;
+                        } else if (i > index) {
+                            const diff = i - index;
+                            allCards[i].style.transform = `rotate(${(i - centerIdx) * 7}deg) translateY(${Math.pow(Math.abs(i - centerIdx), 1.5) * 2}px) translateX(${diff * 14}px)`;
+                        }
+                    }
+                });
+
+                cardEl.addEventListener('mouseleave', () => {
+                    const allCards = container.children;
+                    for (let i = 0; i < allCards.length; i++) {
+                        const origOffset = i - centerIdx;
+                        allCards[i].style.transform = `rotate(${origOffset * 7}deg) translateY(${Math.pow(Math.abs(origOffset), 1.5) * 2}px) translateX(0px)`;
+                    }
+                });
+
+                // Desktop Drag event listeners
+                cardEl.addEventListener('dragstart', (e) => {
+                    if (!gameActive || isEvaluating) return;
+                    e.dataTransfer.setData('text/plain', card.value);
+                    cardEl.classList.add('opacity-50', 'scale-95');
+                });
+
+                cardEl.addEventListener('dragend', () => {
+                    cardEl.classList.remove('opacity-50', 'scale-95');
+                });
+
+                // Mobile Touch Drag & Drop Simulation / Tap Support
+                let touchClone = null;
+                cardEl.addEventListener('touchstart', (e) => {
+                    if (!gameActive || isEvaluating) return;
+                    // Don't prevent default immediately so scroll isn't locked if not dragging, but track touch
+                }, {passive: true});
+
+                cardEl.addEventListener('touchmove', (e) => {
+                    if (!gameActive || isEvaluating) return;
+                    const touch = e.touches[0];
+                    
+                    if (!touchClone) {
+                        touchClone = cardEl.cloneNode(true);
+                        touchClone.style.position = 'fixed';
+                        touchClone.style.zIndex = '1000';
+                        touchClone.style.width = cardEl.offsetWidth + 'px';
+                        touchClone.style.height = cardEl.offsetHeight + 'px';
+                        touchClone.style.pointerEvents = 'none';
+                        touchClone.style.opacity = '0.85';
+                        touchClone.style.transform = 'scale(1.2) rotate(0deg)';
+                        document.body.appendChild(touchClone);
+                    }
+                    
+                    touchClone.style.left = (touch.clientX - cardEl.offsetWidth / 2) + 'px';
+                    touchClone.style.top = (touch.clientY - cardEl.offsetHeight / 2) + 'px';
+                }, {passive: true});
+
+                cardEl.addEventListener('touchend', (e) => {
+                    if (!gameActive || isEvaluating) return;
+                    if (touchClone) {
+                        touchClone.remove();
+                        touchClone = null;
+                    }
+
+                    const touch = e.changedTouches[0];
+                    const slot1Elem = document.getElementById('slot-1');
+                    const slot2Elem = document.getElementById('slot-2');
+
+                    const rect1 = slot1Elem.getBoundingClientRect();
+                    const rect2 = slot2Elem.getBoundingClientRect();
+
+                    const x = touch.clientX;
+                    const y = touch.clientY;
+
+                    // Check if dropped inside slot 1
+                    if (x >= rect1.left && x <= rect1.right && y >= rect1.top && y <= rect1.bottom) {
+                        droppedCards[0] = card.value;
+                        updateSlots();
+                        checkIfComplete();
+                    } 
+                    // Check if dropped inside slot 2
+                    else if (x >= rect2.left && x <= rect2.right && y >= rect2.top && y <= rect2.bottom) {
+                        droppedCards[1] = card.value;
+                        updateSlots();
+                        checkIfComplete();
+                    } else {
+                        // Fallback: Tap to fill empty slot if not dragged accurately
+                        if (droppedCards[0] === null) {
+                            droppedCards[0] = card.value;
+                        } else if (droppedCards[1] === null) {
+                            droppedCards[1] = card.value;
+                        }
+                        updateSlots();
+                        checkIfComplete();
+                    }
+                });
+
+                // Also support standard click tap
+                cardEl.addEventListener('click', () => {
+                    if (!gameActive || isEvaluating) return;
+                    if (droppedCards[0] === null) {
+                        droppedCards[0] = card.value;
+                    } else if (droppedCards[1] === null) {
+                        droppedCards[1] = card.value;
+                    }
+                    updateSlots();
+                    checkIfComplete();
+                });
+
+                container.appendChild(cardEl);
+            });
+        }
+
+        // Generate a valid random target number between 2 and 18
+        function generateTarget() {
+            let idx1 = Math.floor(Math.random() * handCards.length);
+            let idx2 = Math.floor(Math.random() * handCards.length);
+
+            targetNumber = handCards[idx1].value + handCards[idx2].value;
+            document.getElementById('target-number').innerText = targetNumber;
+        }
+
+        // Drag and drop handlers for specific slots
+        function allowDrop(e) {
+            e.preventDefault();
+            if (isEvaluating) return;
+            const slot = e.currentTarget;
+            slot.classList.add('border-indigo-400', 'bg-indigo-950/40', 'scale-105');
+        }
+
+        function dropZoneLeave(e) {
+            const slot = e.currentTarget;
+            slot.classList.remove('border-indigo-400', 'bg-indigo-950/40', 'scale-105');
+        }
+
+        function dropCardToSlot(e, slotIndex) {
+            e.preventDefault();
+            dropZoneLeave(e);
+            if (!gameActive || isEvaluating) return;
+
+            const cardValue = parseInt(e.dataTransfer.getData('text/plain'));
+            if (!isNaN(cardValue)) {
+                droppedCards[slotIndex] = cardValue;
+                updateSlots();
+                checkIfComplete();
+            }
+        }
+
+        // Update selected card slots display and plus sign visibility
+        function updateSlots() {
+            const slot1 = document.getElementById('slot-1');
+            const slot2 = document.getElementById('slot-2');
+            const plusSign = document.getElementById('plus-sign');
+            const resultDisplay = document.getElementById('result-display');
+
+            if (droppedCards[0] !== null) {
+                slot1.innerHTML = `<span class="text-xs absolute top-2 left-3 font-semibold opacity-60">${droppedCards[0]}</span><span>${droppedCards[0]}</span>`;
+                slot1.className = "w-20 h-24 sm:w-24 sm:h-32 rounded-2xl border-2 border-indigo-400 flex flex-col items-center justify-center font-black text-2xl md:text-3xl text-white bg-indigo-600 shadow-xl relative transition-all duration-300";
+            } else {
+                slot1.innerHTML = `<span class="text-xs opacity-50 font-normal">格子 1</span><span>-</span>`;
+                slot1.className = "w-20 h-24 sm:w-24 sm:h-32 rounded-2xl border-2 border-dashed border-slate-500 flex flex-col items-center justify-center font-black text-2xl md:text-3xl bg-slate-800/60 text-slate-400 transition-all duration-300 shadow-inner relative";
+            }
+
+            if (droppedCards[1] !== null) {
+                slot2.innerHTML = `<span class="text-xs absolute top-2 left-3 font-semibold opacity-60">${droppedCards[1]}</span><span>${droppedCards[1]}</span>`;
+                slot2.className = "w-20 h-24 sm:w-24 sm:h-32 rounded-2xl border-2 border-indigo-400 flex flex-col items-center justify-center font-black text-2xl md:text-3xl text-white bg-indigo-600 shadow-xl relative transition-all duration-300";
+            } else {
+                slot2.innerHTML = `<span class="text-xs opacity-50 font-normal">格子 2</span><span>-</span>`;
+                slot2.className = "w-20 h-24 sm:w-24 sm:h-32 rounded-2xl border-2 border-dashed border-slate-500 flex flex-col items-center justify-center font-black text-2xl md:text-3xl bg-slate-800/60 text-slate-400 transition-all duration-300 shadow-inner relative";
+            }
+
+            // Show plus sign if at least one card is placed or both are placed
+            if (droppedCards[0] !== null || droppedCards[1] !== null) {
+                plusSign.classList.remove('opacity-0', 'scale-75');
+                plusSign.classList.add('opacity-100', 'scale-100');
+            } else {
+                plusSign.classList.remove('opacity-100', 'scale-100');
+                plusSign.classList.add('opacity-0', 'scale-75');
+                resultDisplay.classList.add('hidden');
+                resultDisplay.classList.remove('flex');
+            }
+        }
+
+        // Clear current card selection
+        function clearSelection() {
+            if (isEvaluating) return;
+            droppedCards = [null, null];
+            updateSlots();
+        }
+
+        // Check if both slots are filled and trigger sequential evaluation animation
+        function checkIfComplete() {
+            if (droppedCards[0] !== null && droppedCards[1] !== null && !isEvaluating) {
+                isEvaluating = true;
+                runEvaluationAnimation();
+            }
+        }
+
+        // Sequential lighting animation: Slot 1 (0s) -> Plus (0.5s) -> Slot 2 (1.0s) -> Result (1.5s)
+        function runEvaluationAnimation() {
+            const slot1 = document.getElementById('slot-1');
+            const plusSign = document.getElementById('plus-sign');
+            const slot2 = document.getElementById('slot-2');
+            const resultDisplay = document.getElementById('result-display');
+            const resultValue = document.getElementById('result-value');
+            const msgEl = document.getElementById('status-message');
+
+            msgEl.innerText = "計算中...";
+            msgEl.className = "mt-3 text-sm md:text-base font-bold text-amber-400 h-6 transition-all duration-300";
+
+            // 1. Light up Slot 1 at 0s
+            slot1.classList.add('ring-4', 'ring-amber-400', 'scale-105', 'bg-amber-600');
+
+            setTimeout(() => {
+                // 2. Dim Slot 1, light up Plus sign at 0.5s
+                slot1.classList.remove('ring-4', 'ring-amber-400', 'scale-105', 'bg-amber-600');
+                plusSign.classList.add('scale-125', 'text-yellow-300', 'drop-shadow-[0_0_10px_rgba(234,179,8,0.8)]');
+            }, 500);
+
+            setTimeout(() => {
+                // 3. Dim Plus sign, light up Slot 2 at 1.0s
+                plusSign.classList.remove('scale-125', 'text-yellow-300', 'drop-shadow-[0_0_10px_rgba(234,179,8,0.8)]');
+                slot2.classList.add('ring-4', 'ring-amber-400', 'scale-105', 'bg-amber-600');
+            }, 1000);
+
+            setTimeout(() => {
+                // 4. Dim Slot 2, show Result on the right at 1.5s
+                slot2.classList.remove('ring-4', 'ring-amber-400', 'scale-105', 'bg-amber-600');
+                
+                const val1 = droppedCards[0];
+                const val2 = droppedCards[1];
+                const sum = val1 + val2;
+
+                resultValue.innerText = sum;
+                resultDisplay.classList.remove('hidden');
+                resultDisplay.classList.add('flex');
+                
+                // Final answer check
+                if (sum === targetNumber) {
+                    score += 1;
+                    document.getElementById('score').innerText = score;
+                    msgEl.innerText = `🎉 答對了！ ${val1} + ${val2} = ${sum} (+1分)`;
+                    msgEl.className = "mt-3 text-sm md:text-base font-bold text-emerald-400 h-6 transition-all duration-300";
+
+                    setTimeout(() => {
+                        droppedCards = [null, null];
+                        resultDisplay.classList.add('hidden');
+                        resultDisplay.classList.remove('flex');
+                        msgEl.innerText = "請將 2 張卡片分別拖曳到下方對應格子";
+                        msgEl.className = "mt-3 text-sm md:text-base font-semibold text-slate-300 h-6 transition-all duration-300";
+                        isEvaluating = false;
+                        updateSlots();
+                        generateTarget();
+                    }, 1200);
+
+                } else {
+                    msgEl.innerText = `❌ 總和是 ${sum}，不是 ${targetNumber}，請再試一次！`;
+                    msgEl.className = "mt-3 text-sm md:text-base font-bold text-rose-400 h-6 transition-all duration-300";
+
+                    setTimeout(() => {
+                        droppedCards = [null, null];
+                        resultDisplay.classList.add('hidden');
+                        resultDisplay.classList.remove('flex');
+                        msgEl.innerText = "請將 2 張卡片分別拖曳到下方對應格子";
+                        msgEl.className = "mt-3 text-sm md:text-base font-semibold text-slate-300 h-6 transition-all duration-300";
+                        isEvaluating = false;
+                        updateSlots();
+                    }, 1500);
+                }
+            }, 1500);
+        }
+
+        // Shuffle / Skip target if user wants a new one
+        function shuffleCards() {
+            if (!gameActive || isEvaluating) return;
+            droppedCards = [null, null];
+            updateSlots();
+            generateTarget();
+            
+            const msgEl = document.getElementById('status-message');
+            msgEl.innerText = "🔄 已切換新目標數字！";
+            setTimeout(() => {
+                msgEl.innerText = "請將 2 張卡片分別拖曳到下方對應格子";
+            }, 1000);
+        }
+
+        // Start Game
+        function startGame() {
+            document.getElementById('start-modal').style.display = 'none';
+            score = 0;
+            timeLeft = 60;
+            isEvaluating = false;
+            document.getElementById('score').innerText = score;
+            document.getElementById('timer').innerText = timeLeft + 's';
+            
+            droppedCards = [null, null];
+            gameActive = true;
+
+            generateTarget();
+            initHand();
+            updateSlots();
+
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer').innerText = timeLeft + 's';
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        // End Game
+        function endGame() {
+            gameActive = false;
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('game-over-modal').style.display = 'flex';
+        }
+
+        // Restart Game
+        function restartGame() {
+            document.getElementById('game-over-modal').style.display = 'none';
+            startGame();
+        }
+
+        // Initial setup on window load
+        window.onload = function() {
+            initHand();
+        };
+    </script>
+</body>
+</html>
