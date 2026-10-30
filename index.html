@@ -304,32 +304,10 @@
         // Global mouse move for floating card and slot hover detection
         document.addEventListener('mousemove', (e) => {
             if (!gameActive || isEvaluating || !isDraggingCard || lastHoveredCardValue === null) return;
-
-            const floatCard = document.getElementById('floating-card');
-            floatCard.style.display = 'flex';
-            floatCard.style.left = (e.clientX - 25) + 'px';
-            floatCard.style.top = (e.clientY - 40) + 'px';
-
-            // Check if hovering over Slot 1 or Slot 2
-            const slot1 = document.getElementById('slot-1');
-            const slot2 = document.getElementById('slot-2');
-            const rect1 = slot1.getBoundingClientRect();
-            const rect2 = slot2.getBoundingClientRect();
-
-            if (e.clientX >= rect1.left && e.clientX <= rect1.right && e.clientY >= rect1.top && e.clientY <= rect1.bottom) {
-                droppedCards[0] = lastHoveredCardValue;
-                hideFloatingCard();
-                updateSlots();
-                checkIfComplete();
-            } else if (e.clientX >= rect2.left && e.clientX <= rect2.right && e.clientY >= rect2.top && e.clientY <= rect2.bottom) {
-                droppedCards[1] = lastHoveredCardValue;
-                hideFloatingCard();
-                updateSlots();
-                checkIfComplete();
-            }
+            handleDragMove(e.clientX, e.clientY);
         });
 
-        // Touch support for mobile devices
+        // Touch support mapping finger to mouse functionality
         document.addEventListener('touchmove', (e) => {
             if (!gameActive || isEvaluating) return;
             const touch = e.touches[0];
@@ -338,44 +316,66 @@
             if (elem) {
                 const cardEl = elem.closest('.sts-card');
                 if (cardEl && cardEl.parentNode.id === 'cards-container') {
-                    const valDiv = cardEl.querySelector('.text-xl');
+                    const valDiv = cardEl.querySelector('.text-2xl');
                     if (valDiv) {
                         lastHoveredCardValue = parseInt(valDiv.innerText);
+                        isDraggingCard = true;
                         showFloatingCard(lastHoveredCardValue);
-                        const floatCard = document.getElementById('floating-card');
-                        floatCard.style.display = 'flex';
-                        floatCard.style.left = (touch.clientX - 25) + 'px';
-                        floatCard.style.top = (touch.clientY - 40) + 'px';
                     }
                 }
             }
+
+            if (isDraggingCard && lastHoveredCardValue !== null) {
+                handleDragMove(touch.clientX, touch.clientY);
+            }
+        }, {passive: true});
+
+        document.addEventListener('touchend', (e) => {
+            if (!gameActive || isEvaluating) return;
+            const touch = e.changedTouches[0];
+            if (lastHoveredCardValue !== null) {
+                const slot1 = document.getElementById('slot-1');
+                const slot2 = document.getElementById('slot-2');
+                const rect1 = slot1.getBoundingClientRect();
+                const rect2 = slot2.getBoundingClientRect();
+
+                if (touch.clientX >= rect1.left && touch.clientX <= rect1.right && touch.clientY >= rect1.top && touch.clientY <= rect1.bottom) {
+                    droppedCards[0] = lastHoveredCardValue;
+                    updateSlots();
+                    checkIfComplete();
+                } else if (touch.clientX >= rect2.left && touch.clientX <= rect2.right && touch.clientY >= rect2.top && touch.clientY <= rect2.bottom) {
+                    droppedCards[1] = lastHoveredCardValue;
+                    updateSlots();
+                    checkIfComplete();
+                }
+            }
+            hideFloatingCard();
+            isDraggingCard = false;
+        });
+
+        function handleDragMove(clientX, clientY) {
+            const floatCard = document.getElementById('floating-card');
+            floatCard.style.display = 'flex';
+            floatCard.style.left = (clientX - 25) + 'px';
+            floatCard.style.top = (clientY - 40) + 'px';
 
             const slot1 = document.getElementById('slot-1');
             const slot2 = document.getElementById('slot-2');
             const rect1 = slot1.getBoundingClientRect();
             const rect2 = slot2.getBoundingClientRect();
 
-            if (touch.clientX >= rect1.left && touch.clientX <= rect1.right && touch.clientY >= rect1.top && touch.clientY <= rect1.bottom) {
-                if (lastHoveredCardValue !== null) {
-                    droppedCards[0] = lastHoveredCardValue;
-                    hideFloatingCard();
-                    updateSlots();
-                    checkIfComplete();
-                }
-            } else if (touch.clientX >= rect2.left && touch.clientX <= rect2.right && touch.clientY >= rect2.top && touch.clientY <= rect2.bottom) {
-                if (lastHoveredCardValue !== null) {
-                    droppedCards[1] = lastHoveredCardValue;
-                    hideFloatingCard();
-                    updateSlots();
-                    checkIfComplete();
-                }
+            if (clientX >= rect1.left && clientX <= rect1.right && clientY >= rect1.top && clientY <= rect1.bottom) {
+                droppedCards[0] = lastHoveredCardValue;
+                hideFloatingCard();
+                updateSlots();
+                checkIfComplete();
+            } else if (clientX >= rect2.left && clientX <= rect2.right && clientY >= rect2.top && clientY <= rect2.bottom) {
+                droppedCards[1] = lastHoveredCardValue;
+                hideFloatingCard();
+                updateSlots();
+                checkIfComplete();
             }
-        }, {passive: true});
-
-        document.addEventListener('touchend', () => {
-            hideFloatingCard();
-            isDraggingCard = false;
-        });
+        }
 
         function showFloatingCard(val) {
             document.getElementById('float-value').innerText = val;
