@@ -11,7 +11,8 @@
     <style>
         body {
             font-family: 'Noto Sans TC', 'Inter', sans-serif;
-            background: linear-gradient(135deg, #3b82f6 0%, #ec4899 100%);
+            background: url('https://pmath-lab.github.io/number18/background.jpg') no-repeat center center fixed;
+            background-size: cover;
             height: 100vh;
             width: 100vw;
             overflow: hidden;
@@ -117,35 +118,35 @@
 
         /* Sequential highlight glow animation for verification */
         @keyframes stepGlow {
-            0% { transform: scale(1); box-shadow: 0 0 0px rgba(250, 204, 21, 0); filter: brightness(1); }
-            50% { transform: scale(1.08); box-shadow: 0 0 30px rgba(250, 204, 21, 1); filter: brightness(1.35); border-color: #facc15; }
-            100% { transform: scale(1); box-shadow: 0 0 0px rgba(250, 204, 21, 0); filter: brightness(1); }
+            0% { transform: scale(1); box-shadow: 0 0 0px rgba(225, 29, 72, 0); filter: brightness(1); }
+            50% { transform: scale(1.08); box-shadow: 0 0 30px rgba(225, 29, 72, 1); filter: brightness(1.35); border-color: #e11d48; }
+            100% { transform: scale(1); box-shadow: 0 0 0px rgba(225, 29, 72, 0); filter: brightness(1); }
         }
         .highlight-glow {
-            animation: stepGlow 1s ease-in-out forwards !important;
+            animation: stepGlow 0.9s ease-in-out forwards !important;
             z-index: 40;
         }
     </style>
 </head>
-<body class="text-white select-none text-base">
+<body class="text-white select-none text-base" style="background: url('https://pmath-lab.github.io/number18/background.jpg') center/cover no-repeat;">
 
     <!-- Scalable Game Viewport container -->
     <div id="game-viewport">
 
         <!-- Header & Scoreboard (Left: Time -> Score -> Level, Right: Sound Toggle) -->
-        <header class="w-full flex justify-between items-center bg-white/20 backdrop-blur-md border border-white/40 px-4 py-3 rounded-2xl shadow-xl">
+        <header class="w-full flex justify-between items-center bg-white/40 backdrop-blur-md border border-white/60 px-4 py-3 rounded-2xl shadow-xl">
             <div class="flex items-center space-x-2.5">
-                <div class="bg-indigo-950/85 border border-indigo-400 px-3.5 py-1.5 rounded-xl shadow-inner flex items-center">
+                <div class="bg-slate-900/85 border border-indigo-400 px-3.5 py-1.5 rounded-xl shadow-inner flex items-center">
                     <span class="text-sm font-black text-indigo-200 tracking-wide">時間：<span id="timer" class="text-white font-black">60</span>秒</span>
                 </div>
-                <div class="bg-indigo-950/85 border border-yellow-400 px-3.5 py-1.5 rounded-xl shadow-inner flex items-center">
+                <div class="bg-slate-900/85 border border-yellow-400 px-3.5 py-1.5 rounded-xl shadow-inner flex items-center">
                     <span class="text-sm font-black text-yellow-200 tracking-wide">分數：<span id="score" class="text-yellow-400 font-black">0</span>分</span>
                 </div>
                 <div id="level-badge" class="hidden bg-gradient-to-r from-amber-500 to-rose-500 border border-yellow-200 px-2.5 py-1 rounded-xl shadow-lg">
                     <span class="text-xs font-black text-white tracking-wider">LV.2</span>
                 </div>
             </div>
-            <button id="sound-toggle-btn" onclick="toggleSound()" class="bg-indigo-950/85 hover:bg-indigo-900 border border-pink-400 w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-inner transition" title="開關音效">
+            <button id="sound-toggle-btn" onclick="toggleSound()" class="bg-slate-900/85 hover:bg-slate-800 border border-pink-400 w-10 h-10 rounded-xl flex items-center justify-center text-lg text-white shadow-inner transition" title="開關音效">
                 🔊
             </button>
         </header>
@@ -154,17 +155,16 @@
         <main class="w-full flex flex-col items-center justify-center my-auto space-y-4">
             <!-- Target Number Display -->
             <div class="text-center flex flex-col items-center w-full">
-                <span class="text-sm uppercase tracking-widest text-yellow-100 font-black drop-shadow mb-1">🎯 目標數字 TARGET</span>
                 
                 <div class="flex items-center justify-center space-x-6 w-full px-2">
-                    <!-- Left: Target Card Image -->
-                    <div id="target-drop-zone" class="w-36 h-48 flex items-center justify-center flex-shrink-0">
+                    <!-- Left: Target Card Image (shifted down by 20px) -->
+                    <div id="target-drop-zone" class="w-36 h-48 flex items-center justify-center flex-shrink-0 transform translate-y-5">
                         <img id="target-img" src="https://pmath-lab.github.io/number18/m11.png" alt="目標卡" class="w-full h-full object-contain drop-shadow-2xl auto-remove-bg transform scale-[2.2] target-floating">
                     </div>
 
                     <!-- Right: Large Target Number & Hearts Grid -->
                     <div class="flex flex-col items-center justify-center space-y-3 py-2">
-                        <div id="target-number-text" class="text-7xl font-black text-yellow-300 drop-shadow-[0_4px_12px_rgba(0,0,0,0.6)] text-center">
+                        <div id="target-number-text" class="text-7xl font-black text-slate-800 drop-shadow-[0_4px_12px_rgba(255,255,255,0.8)] text-center">
                             11
                         </div>
                         <!-- Hearts Grid Display -->
@@ -174,15 +174,15 @@
                     </div>
                 </div>
 
-                <div id="status-message" class="mt-2 text-sm font-bold text-yellow-100 h-6 transition-all duration-300 drop-shadow">
+                <div id="status-message" class="mt-4 text-sm font-black text-slate-900 h-6 transition-all duration-300 drop-shadow-[0_1px_4px_rgba(255,255,255,0.9)]">
                     將手牌移出選卡區即可拖拉，移至格子即可自動放入！
                 </div>
             </div>
 
-            <!-- Card-Sized Drop Slots -->
-            <div class="flex flex-col items-center space-y-2 bg-white/15 border border-white/30 p-4 rounded-3xl backdrop-blur-md shadow-2xl w-full">
+            <!-- Card-Sized Drop Slots (Removed white frosted background) -->
+            <div class="flex flex-col items-center space-y-2 p-4 w-full">
                 <div class="flex justify-between w-full px-1 items-center">
-                    <span id="slot-instruction-label" class="text-sm text-yellow-200 font-black uppercase tracking-wider flex items-center space-x-1">
+                    <span id="slot-instruction-label" class="text-sm text-slate-900 font-black uppercase tracking-wider flex items-center space-x-1 drop-shadow-[0_1px_3px_rgba(255,255,255,0.9)]">
                         <span>📥</span> <span>放入 2 張卡片</span>
                     </span>
                     <button onclick="clearSelection()" class="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-sm font-black rounded-xl text-white shadow transition">清空重選</button>
@@ -191,21 +191,21 @@
                 <div id="equation-container" class="flex items-center space-x-3 transition-all duration-300 py-1">
                     <!-- Slot 1 -->
                     <div id="slot-1" 
-                         class="w-24 h-36 rounded-2xl border-3 border-dashed border-yellow-300/60 flex flex-col items-center justify-center font-black text-sm bg-indigo-950/40 text-yellow-200 transition-all duration-300 shadow-inner">
-                        <span class="opacity-80 font-bold mb-1">格子 1</span>
-                        <span>-</span>
+                         class="w-24 h-36 rounded-2xl border-3 border-dashed border-slate-700/60 flex flex-col items-center justify-center font-black text-sm bg-indigo-950/40 text-yellow-200 transition-all duration-300 shadow-inner">
+                        <span class="opacity-90 font-black text-slate-200 mb-1 drop-shadow">格子 1</span>
+                        <span class="text-slate-200">-</span>
                     </div>
                     
-                    <!-- Plus Sign (+50% size: text-3xl -> text-[45px] / text-4xl) -->
-                    <div id="plus-sign" class="text-4xl font-black text-yellow-300 transition-all duration-300 opacity-0 scale-75 drop-shadow">
+                    <!-- Plus Sign (+50% size: text-4xl text-slate-900) -->
+                    <div id="plus-sign" class="text-4xl font-black text-slate-900 drop-shadow-[0_1px_4px_rgba(255,255,255,0.9)] transition-all duration-300 opacity-0 scale-75">
                         +
                     </div>
 
                     <!-- Slot 2 -->
                     <div id="slot-2" 
-                         class="w-24 h-36 rounded-2xl border-3 border-dashed border-yellow-300/60 flex flex-col items-center justify-center font-black text-sm bg-indigo-950/40 text-yellow-200 transition-all duration-300 shadow-inner">
-                        <span class="opacity-80 font-bold mb-1">格子 2</span>
-                        <span>-</span>
+                         class="w-24 h-36 rounded-2xl border-3 border-dashed border-slate-700/60 flex flex-col items-center justify-center font-black text-sm bg-indigo-950/40 text-yellow-200 transition-all duration-300 shadow-inner">
+                        <span class="opacity-90 font-black text-slate-200 mb-1 drop-shadow">格子 2</span>
+                        <span class="text-slate-200">-</span>
                     </div>
 
                     <!-- Confirm Button (Always visible initially, hides during evaluation) -->
@@ -216,10 +216,10 @@
 
                     <!-- Result Display Area -->
                     <div id="result-display" class="hidden items-center space-x-3 transition-all duration-300">
-                        <!-- Equal Sign (+50% size: text-3xl -> text-[45px] / text-4xl) -->
-                        <span id="equal-sign" class="text-4xl font-black text-yellow-300 drop-shadow opacity-40 transition-all duration-300">=</span>
+                        <!-- Equal Sign (text-4xl text-slate-900) -->
+                        <span id="equal-sign" class="text-4xl font-black text-slate-900 drop-shadow-[0_1px_4px_rgba(255,255,255,0.9)] opacity-40 transition-all duration-300">=</span>
                         <div id="result-box" class="w-24 h-36 rounded-2xl border-3 border-yellow-400/40 bg-yellow-500/10 flex flex-col items-center justify-center font-black text-2xl text-yellow-200/40 shadow-2xl transition-all duration-300">
-                            <!-- Increased font size by 30%: text-3xl -> text-4xl (approx 30% larger) -->
+                            <!-- Increased font size by 30%: text-4xl -->
                             <span id="result-value" class="text-4xl font-black">?</span>
                         </div>
                     </div>
@@ -1049,10 +1049,10 @@
                 slot1.className = "w-24 h-36 rounded-2xl flex flex-col items-center justify-center p-0 relative transition-all duration-300";
             } else {
                 slot1.innerHTML = `
-                    <span class="opacity-80 font-bold mb-1">格子 1</span>
-                    <span>-</span>
+                    <span class="opacity-90 font-black text-slate-200 mb-1 drop-shadow">格子 1</span>
+                    <span class="text-slate-200">-</span>
                 `;
-                slot1.className = "w-24 h-36 rounded-2xl border-3 border-dashed border-yellow-300/60 flex flex-col items-center justify-center font-black text-sm bg-indigo-950/40 text-yellow-200 transition-all duration-300 shadow-inner";
+                slot1.className = "w-24 h-36 rounded-2xl border-3 border-dashed border-slate-700/60 flex flex-col items-center justify-center font-black text-sm bg-indigo-950/40 text-yellow-200 transition-all duration-300 shadow-inner";
             }
 
             if (droppedCards[1] !== null) {
@@ -1062,10 +1062,10 @@
                 slot2.className = "w-24 h-36 rounded-2xl flex flex-col items-center justify-center p-0 relative transition-all duration-300";
             } else {
                 slot2.innerHTML = `
-                    <span class="opacity-80 font-bold mb-1">格子 2</span>
-                    <span>-</span>
+                    <span class="opacity-90 font-black text-slate-200 mb-1 drop-shadow">格子 2</span>
+                    <span class="text-slate-200">-</span>
                 `;
-                slot2.className = "w-24 h-36 rounded-2xl border-3 border-dashed border-yellow-300/60 flex flex-col items-center justify-center font-black text-sm bg-indigo-950/40 text-yellow-200 transition-all duration-300 shadow-inner";
+                slot2.className = "w-24 h-36 rounded-2xl border-3 border-dashed border-slate-700/60 flex flex-col items-center justify-center font-black text-sm bg-indigo-950/40 text-yellow-200 transition-all duration-300 shadow-inner";
             }
 
             if (droppedCards[0] !== null || droppedCards[1] !== null) {
@@ -1168,36 +1168,36 @@
             resultDisplay.classList.remove('hidden');
             resultDisplay.classList.add('flex');
             equalSign.style.opacity = '0.4';
-            resultBox.className = "w-24 h-36 rounded-2xl border-3 border-yellow-400/40 bg-yellow-500/10 flex flex-col items-center justify-center font-black text-2xl text-yellow-200/40 shadow-2xl transition-all duration-300";
+            resultBox.className = "w-24 h-36 rounded-2xl border-3 border-slate-800/40 bg-white/40 flex flex-col items-center justify-center font-black text-2xl text-slate-900/40 shadow-2xl transition-all duration-300";
             resultValue.innerText = "?";
 
-            // Step 1: Highlight Slot 1 for 1 second
+            // Step 1: Highlight Slot 1 for 0.9 second
             slot1.classList.add('highlight-glow');
             playSound('select');
 
             setTimeout(() => {
                 slot1.classList.remove('highlight-glow');
-                // Step 2: Highlight Plus sign for 1 second
+                // Step 2: Highlight Plus sign for 0.9 second
                 plusSign.classList.add('highlight-glow');
                 playSound('select');
 
                 setTimeout(() => {
                     plusSign.classList.remove('highlight-glow');
-                    // Step 3: Highlight Slot 2 for 1 second
+                    // Step 3: Highlight Slot 2 for 0.9 second
                     slot2.classList.add('highlight-glow');
                     playSound('select');
 
                     setTimeout(() => {
                         slot2.classList.remove('highlight-glow');
-                        // Step 4: Highlight Equals sign for 1 second
+                        // Step 4: Highlight Equals sign for 0.9 second
                         equalSign.classList.add('highlight-glow');
                         equalSign.style.opacity = '1';
                         playSound('select');
 
                         setTimeout(() => {
                             equalSign.classList.remove('highlight-glow');
-                            // Step 5: Highlight Result box & display calculated number for 1 second
-                            resultBox.className = "w-24 h-36 rounded-2xl border-3 border-yellow-400 bg-yellow-500/30 flex flex-col items-center justify-center font-black text-2xl text-yellow-200 shadow-2xl highlight-glow transition-all duration-300";
+                            // Step 5: Highlight Result box & display calculated number for 0.9 second
+                            resultBox.className = "w-24 h-36 rounded-2xl border-3 border-rose-600 bg-white/70 flex flex-col items-center justify-center font-black text-2xl text-slate-900 shadow-2xl highlight-glow transition-all duration-300";
                             resultValue.innerText = sum;
                             playSound('select');
 
@@ -1351,11 +1351,11 @@
                                         if (statusMsg) statusMsg.innerText = "將手牌移出選卡區即可拖拉，移至格子即可自動放入！";
                                     }, 1400);
                                 }
-                            }, 1000); // Result box highlight duration
-                        }, 1000); // Equals sign highlight duration
-                    }, 1000); // Slot 2 highlight duration
-                }, 1000); // Plus sign highlight duration
-            }, 1000); // Slot 1 highlight duration
+                            }, 900); // Result box highlight duration
+                        }, 900); // Equals sign highlight duration
+                    }, 900); // Slot 2 highlight duration
+                }, 900); // Plus sign highlight duration
+            }, 900); // Slot 1 highlight duration
         }
     </script>
 </body>
