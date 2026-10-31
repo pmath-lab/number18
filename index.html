@@ -163,12 +163,12 @@
                     </div>
 
                     <!-- Right: Large Target Number & Hearts Grid -->
-                    <div class="flex flex-col items-center justify-center space-y-3 py-2">
+                    <div class="flex flex-col items-center justify-center space-y-3 py-2 z-30">
                         <div id="target-number-text" class="text-7xl font-black text-slate-800 drop-shadow-[0_4px_12px_rgba(255,255,255,0.8)] text-center">
                             11
                         </div>
-                        <!-- Hearts Grid Display -->
-                        <div id="hearts-grid" class="grid grid-cols-5 gap-2 w-48 max-w-full justify-items-center">
+                        <!-- Hearts Grid Display (Showing exact number of target hearts) -->
+                        <div id="hearts-grid" class="flex flex-wrap gap-1.5 justify-center max-w-[220px]">
                             <!-- Hearts generated dynamically -->
                         </div>
                     </div>
@@ -306,25 +306,6 @@
     </div>
 
     <script>
-        // Auto-scaling viewport to fit any phone screen size perfectly without scrolling
-        function resizeGame() {
-            const viewport = document.getElementById('game-viewport');
-            const targetWidth = 480;
-            const targetHeight = 800;
-            
-            const windowWidth = window.innerWidth;
-            const windowHeight = window.innerHeight;
-
-            const scaleX = windowWidth / targetWidth;
-            const scaleY = windowHeight / targetHeight;
-            const scale = Math.min(scaleX, scaleY, 1.1);
-
-            viewport.style.transform = `scale(${scale})`;
-        }
-
-        window.addEventListener('resize', resizeGame);
-        window.addEventListener('DOMContentLoaded', resizeGame);
-
         // Web Audio API Synthesizer for Game Sound Effects
         let audioCtx = null;
         let soundEnabled = true;
@@ -339,7 +320,7 @@
             }
         }
 
-        function toggleSound() {
+        window.toggleSound = function() {
             soundEnabled = !soundEnabled;
             const btn = document.getElementById('sound-toggle-btn');
             if (btn) btn.innerText = soundEnabled ? '🔊' : '🔇';
@@ -347,7 +328,7 @@
                 initAudio();
                 playSound('select');
             }
-        }
+        };
 
         function playSound(type, stepIndex = 0) {
             if (!soundEnabled) return;
@@ -487,6 +468,7 @@
         let droppedCards = [null, null];
         let disabledHandValues = new Set();
         let timerInterval = null;
+        let monsterActiveCard = null;
 
         const allHandCards = [
             { value: 1, img: "https://pmath-lab.github.io/number18/p1.png" },
@@ -502,7 +484,7 @@
 
         let handCards = [...allHandCards];
 
-        // Ensure selectDifficulty is globally accessible
+        // Ensure functions are globally accessible on window
         window.selectDifficulty = function(diff) {
             initAudio();
             playSound('select');
@@ -608,10 +590,12 @@
             if (msg) msg.innerText = "已清空選卡，請重新放入卡片！";
         };
 
-        // Store monster's active card persistently for level 2 and 3
-        let monsterActiveCard = null;
+        window.submitAnswer = function() {
+            if (isEvaluating || droppedCards[0] === null || droppedCards[1] === null) return;
+            isEvaluating = true;
+            runEvaluationAnimation();
+        };
 
-        // Animate monster playing the first card into Slot 1 in Level 2 & 3
         function animateMonsterPlayCard(cardObj) {
             monsterActiveCard = cardObj;
             const targetZone = document.getElementById('target-drop-zone');
@@ -658,7 +642,6 @@
             }, 500);
         }
 
-        // Function to generate a new target number and update the image & hearts
         function generateTarget() {
             let minTarget = 2;
             let maxTarget = 18;
@@ -706,8 +689,8 @@
                         heartEl.className = "text-xl sm:text-2xl text-rose-400 drop-shadow-md transform scale-125 transition-all";
                         heartEl.innerHTML = "❤️";
                     } else {
-                        heartEl.className = "text-xl sm:text-2xl text-white/20 select-none";
-                        heartEl.innerHTML = "🤍";
+                        heartEl.className = "text-xl sm:text-2xl text-black select-none transform scale-125 opacity-0";
+                        heartEl.innerHTML = "🖤";
                     }
                     heartsGrid.appendChild(heartEl);
                 }
@@ -715,7 +698,6 @@
 
             disabledHandValues.clear();
             if (currentLevel === 3 && currentDifficulty !== 'easy') {
-                // Pick valid pairs that sum to targetNumber from available handCards
                 let possiblePairs = [];
                 for (let i = 0; i < handCards.length; i++) {
                     for (let j = i + 1; j < handCards.length; j++) {
@@ -735,7 +717,6 @@
                         newlyDisabled.push(candidateCards[k].value);
                     }
 
-                    // Render hand normally first, then trigger lightning animation
                     initHand(false);
                     setTimeout(() => {
                         animateLightningStrikes(newlyDisabled);
@@ -751,15 +732,13 @@
                 const minCard1 = Math.max(1, targetNumber - maxCardVal);
                 const maxCard1 = Math.min(maxCardVal, targetNumber - 1);
                 let monsterVal = Math.floor(Math.random() * (maxCard1 - minCard1 + 1)) + minCard1;
-                let monsterCard = handCards.find(c => c.value === monsterVal);
-                if (!monsterCard && handCards.length > 0) {
-                    monsterCard = handCards[0];
-                }
+                
+                const randomImgIdx = Math.floor(Math.random() * 5) + 1;
+                const randomCardImgUrl = `https://pmath-lab.github.io/number18/a${randomImgIdx}.png`;
+
                 droppedCards = [null, null];
                 updateSlots();
-                if (monsterCard) {
-                    animateMonsterPlayCard({ value: monsterCard.value, img: monsterCard.img, isMonsterGenerated: true });
-                }
+                animateMonsterPlayCard({ value: monsterVal, img: randomCardImgUrl, isMonsterGenerated: true });
             } else {
                 monsterActiveCard = null;
                 droppedCards = [null, null];
@@ -767,7 +746,6 @@
             }
         }
 
-        // Animate lightning from monster center to disabled cards in hand
         function animateLightningStrikes(disabledVals) {
             disabledVals.forEach(val => disabledHandValues.add(val));
             const targetImg = document.getElementById('target-img');
@@ -791,7 +769,6 @@
                     const endX = cardRect.left + cardRect.width / 2;
                     const endY = cardRect.top + cardRect.height / 2;
 
-                    // Draw lightning line
                     const length = Math.hypot(endX - startX, endY - startY);
                     const angle = Math.atan2(endY - startY, endX - startX) * (180 / Math.PI);
 
@@ -807,7 +784,6 @@
                 }
             });
 
-            // Refresh hand to apply gray/disabled overlay after lightning strikes
             setTimeout(() => {
                 initHand(true);
             }, 300);
@@ -941,16 +917,6 @@
             isDraggingCard = false;
         });
 
-        function checkIfComplete() {
-            // Auto check disabled, now waiting for Confirm button click
-        }
-
-        window.submitAnswer = function() {
-            if (isEvaluating || droppedCards[0] === null || droppedCards[1] === null) return;
-            isEvaluating = true;
-            runEvaluationAnimation();
-        };
-
         function handleDragMove(clientX, clientY) {
             const elem = document.elementFromPoint(clientX, clientY);
             if (elem && elem.closest('#confirm-btn')) {
@@ -1021,7 +987,6 @@
             const resultDisplay = document.getElementById('result-display');
             const confirmBtn = document.getElementById('confirm-btn');
 
-            // Ensure confirm button is always visible when not evaluating
             if (confirmBtn && !isEvaluating) {
                 confirmBtn.style.display = 'flex';
             }
@@ -1029,16 +994,11 @@
             if (droppedCards[0] !== null) {
                 if (droppedCards[0].isMonsterGenerated) {
                     slot1.innerHTML = `
-                        <div class="w-full h-full bg-gradient-to-br from-amber-500 via-orange-600 to-rose-700 rounded-2xl border-2 border-yellow-300 p-2 flex flex-col justify-between items-center shadow-2xl relative overflow-visible">
+                        <div class="w-full h-full relative rounded-2xl overflow-visible flex flex-col items-center justify-center">
                             <div class="absolute -top-3 -left-3 w-12 h-12 bg-yellow-400 rounded-full border-2 border-white shadow-lg flex items-center justify-center text-rose-900 font-black text-2xl z-30 drop-shadow">
                                 ${droppedCards[0].value}
                             </div>
-                            <div class="flex-1 flex items-center justify-center text-4xl drop-shadow-lg mt-3">
-                                ⚔️
-                            </div>
-                            <div class="text-[11px] font-black text-yellow-100 tracking-wider uppercase mb-1 bg-black/30 px-2 py-0.5 rounded-md">
-                                攻擊怪獸
-                            </div>
+                            <img src="${droppedCards[0].img}" alt="敵方卡${droppedCards[0].value}" class="w-full h-full object-contain drop-shadow-md rounded-2xl">
                         </div>
                     `;
                 } else {
@@ -1068,16 +1028,17 @@
                 slot2.className = "w-24 h-36 rounded-2xl border-3 border-dashed border-slate-700/60 flex flex-col items-center justify-center font-black text-sm bg-indigo-950/40 text-yellow-200 transition-all duration-300 shadow-inner";
             }
 
-            if (droppedCards[0] !== null || droppedCards[1] !== null) {
-                plusSign.style.opacity = '1';
-                plusSign.style.transform = 'scale(1)';
-            } else {
-                plusSign.style.opacity = '0';
-                plusSign.style.transform = 'scale(0.75)';
+            if (plusSign) {
+                if (droppedCards[0] !== null || droppedCards[1] !== null) {
+                    plusSign.style.opacity = '1';
+                    plusSign.style.transform = 'scale(1)';
+                } else {
+                    plusSign.style.opacity = '0';
+                    plusSign.style.transform = 'scale(0.75)';
+                }
             }
         }
 
-        // Sequential 2-stage Attack Animation & Heart Reduction
         function flySingleCard(slotId, cardObj, callback) {
             const slotEl = document.getElementById(slotId);
             const targetZone = document.getElementById('target-drop-zone');
@@ -1162,7 +1123,6 @@
 
             if (statusMsg) statusMsg.innerText = "驗算中...";
 
-            // Immediately show plus, equal sign, and result box container placeholder
             plusSign.style.opacity = '1';
             plusSign.style.transform = 'scale(1)';
             resultDisplay.classList.remove('hidden');
@@ -1204,14 +1164,13 @@
                             setTimeout(() => {
                                 resultBox.classList.remove('highlight-glow');
 
-                                // Now proceed to attack animation & evaluation check
                                 if (sum === targetNumber) {
                                     playSound('correct');
                                     if (statusMsg) statusMsg.innerText = `太棒了！ ${val1} + ${val2} = ${targetNumber} 成功反擊怪獸！`;
 
                                     const pointsEarned = Math.max(1, Math.floor(timeLeft / 6));
                                     score += pointsEarned;
-                                    timeLeft = 60; // Reset time to 60s on correct answer
+                                    timeLeft = 60;
                                     const scoreEl = document.getElementById('score');
                                     const timerEl = document.getElementById('timer');
                                     if (scoreEl) scoreEl.innerText = score;
@@ -1224,7 +1183,7 @@
                                         const interval1 = setInterval(() => {
                                             if (count1 < val1 && heartIdx < hearts.length) {
                                                 hearts[heartIdx].innerHTML = "🖤";
-                                                hearts[heartIdx].className = "text-base text-white/30 transition-all";
+                                                hearts[heartIdx].className = "text-xl sm:text-2xl text-black drop-shadow-md transform scale-125 transition-all";
                                                 playSound('heart', heartIdx);
                                                 heartIdx++;
                                                 count1++;
@@ -1236,14 +1195,13 @@
                                                         const interval2 = setInterval(() => {
                                                             if (count2 < val2 && heartIdx < hearts.length) {
                                                                 hearts[heartIdx].innerHTML = "🖤";
-                                                                hearts[heartIdx].className = "text-base text-white/30 transition-all";
+                                                                hearts[heartIdx].className = "text-xl sm:text-2xl text-black drop-shadow-md transform scale-125 transition-all";
                                                                 playSound('heart', heartIdx);
                                                                 heartIdx++;
                                                                 count2++;
                                                             } else {
                                                                 clearInterval(interval2);
                                                                 
-                                                                // Check Level Up condition for LV.3 (score >= 100 && not easy)
                                                                 if (score >= 100 && !isLevel3 && currentLevel === 2 && currentDifficulty !== 'easy') {
                                                                     currentLevel = 3;
                                                                     isLevel3 = true;
@@ -1279,7 +1237,6 @@
                                                                         isEvaluating = false;
                                                                     }, 2400);
 
-                                                                // Check Level Up condition for LV.2 (score >= 40)
                                                                 } else if (score >= 40 && !isLevel2 && currentLevel === 1) {
                                                                     currentLevel = 2;
                                                                     isLevel2 = true;
@@ -1351,11 +1308,11 @@
                                         if (statusMsg) statusMsg.innerText = "將手牌移出選卡區即可拖拉，移至格子即可自動放入！";
                                     }, 1400);
                                 }
-                            }, 900); // Result box highlight duration
-                        }, 900); // Equals sign highlight duration
-                    }, 900); // Slot 2 highlight duration
-                }, 900); // Plus sign highlight duration
-            }, 900); // Slot 1 highlight duration
+                            }, 900);
+                        }, 900);
+                    }, 900);
+                }, 900);
+            }, 900);
         }
     </script>
 </body>
