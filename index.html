@@ -98,6 +98,33 @@
         .level-up-anim {
             animation: levelUpPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
+
+        /* Lightning bolt flash animation */
+        @keyframes lightningFlash {
+            0% { opacity: 0.2; filter: brightness(3); }
+            50% { opacity: 1; filter: brightness(5) drop-shadow(0 0 15px #facc15); }
+            100% { opacity: 0; }
+        }
+        .lightning-bolt {
+            position: fixed;
+            z-index: 9999;
+            pointer-events: none;
+            background: linear-gradient(90deg, #facc15, #ffffff, #3b82f6);
+            height: 4px;
+            transform-origin: left center;
+            animation: lightningFlash 0.35s ease-out forwards;
+        }
+
+        /* Sequential highlight glow animation for verification */
+        @keyframes stepGlow {
+            0% { transform: scale(1); box-shadow: 0 0 0px rgba(250, 204, 21, 0); filter: brightness(1); }
+            50% { transform: scale(1.08); box-shadow: 0 0 30px rgba(250, 204, 21, 1); filter: brightness(1.35); border-color: #facc15; }
+            100% { transform: scale(1); box-shadow: 0 0 0px rgba(250, 204, 21, 0); filter: brightness(1); }
+        }
+        .highlight-glow {
+            animation: stepGlow 1s ease-in-out forwards !important;
+            z-index: 40;
+        }
     </style>
 </head>
 <body class="text-white select-none text-base">
@@ -125,34 +152,34 @@
 
         <!-- Main Game Area -->
         <main class="w-full flex flex-col items-center justify-center my-auto space-y-4">
-            <!-- Target Number Display (Modified layout: image on left with 50+50% scale & float, right side perfectly vertically centered and aligned) -->
+            <!-- Target Number Display -->
             <div class="text-center flex flex-col items-center w-full">
-                <span class="text-sm uppercase tracking-widest text-yellow-100 font-black drop-shadow mb-2">🎯 目標數字 TARGET</span>
+                <span class="text-sm uppercase tracking-widest text-yellow-100 font-black drop-shadow mb-1">🎯 目標數字 TARGET</span>
                 
-                <div class="flex items-center justify-center space-x-8 w-full px-2">
-                    <!-- Left: Target Card Image (Enlarged further and floating animation) -->
+                <div class="flex items-center justify-center space-x-6 w-full px-2">
+                    <!-- Left: Target Card Image -->
                     <div id="target-drop-zone" class="w-36 h-48 flex items-center justify-center flex-shrink-0">
                         <img id="target-img" src="https://pmath-lab.github.io/number18/m11.png" alt="目標卡" class="w-full h-full object-contain drop-shadow-2xl auto-remove-bg transform scale-[2.2] target-floating">
                     </div>
 
-                    <!-- Right: Large Target Number & 6x3 Hearts Grid (Centered horizontally and vertically) -->
-                    <div class="flex flex-col items-center justify-center space-y-2 py-2">
-                        <div id="target-number-text" class="text-6xl font-black text-yellow-300 drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)] text-center">
+                    <!-- Right: Large Target Number & Hearts Grid -->
+                    <div class="flex flex-col items-center justify-center space-y-3 py-2">
+                        <div id="target-number-text" class="text-7xl font-black text-yellow-300 drop-shadow-[0_4px_12px_rgba(0,0,0,0.6)] text-center">
                             11
                         </div>
-                        <!-- 6x3 Hearts Grid Display -->
-                        <div id="hearts-grid" class="grid grid-cols-6 gap-1.5 w-40 max-w-full justify-items-center">
+                        <!-- Hearts Grid Display -->
+                        <div id="hearts-grid" class="grid grid-cols-5 gap-2 w-48 max-w-full justify-items-center">
                             <!-- Hearts generated dynamically -->
                         </div>
                     </div>
                 </div>
 
-                <div id="status-message" class="mt-2.5 text-sm font-bold text-yellow-100 h-6 transition-all duration-300 drop-shadow">
+                <div id="status-message" class="mt-2 text-sm font-bold text-yellow-100 h-6 transition-all duration-300 drop-shadow">
                     將手牌移出選卡區即可拖拉，移至格子即可自動放入！
                 </div>
             </div>
 
-            <!-- Card-Sized Drop Slots (Full Card Images without yellow grid boxes) -->
+            <!-- Card-Sized Drop Slots -->
             <div class="flex flex-col items-center space-y-2 bg-white/15 border border-white/30 p-4 rounded-3xl backdrop-blur-md shadow-2xl w-full">
                 <div class="flex justify-between w-full px-1 items-center">
                     <span id="slot-instruction-label" class="text-sm text-yellow-200 font-black uppercase tracking-wider flex items-center space-x-1">
@@ -160,7 +187,7 @@
                     </span>
                     <button onclick="clearSelection()" class="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-sm font-black rounded-xl text-white shadow transition">清空重選</button>
                 </div>
-                <!-- Equation Layout: Grid 1, Plus, Grid 2, and Result -->
+                <!-- Equation Layout: Grid 1, Plus, Grid 2, and Confirm Button / Result -->
                 <div id="equation-container" class="flex items-center space-x-3 transition-all duration-300 py-1">
                     <!-- Slot 1 -->
                     <div id="slot-1" 
@@ -169,8 +196,8 @@
                         <span>-</span>
                     </div>
                     
-                    <!-- Plus Sign -->
-                    <div id="plus-sign" class="text-3xl font-black text-yellow-300 transition-all duration-300 opacity-0 scale-75 drop-shadow">
+                    <!-- Plus Sign (+50% size: text-3xl -> text-[45px] / text-4xl) -->
+                    <div id="plus-sign" class="text-4xl font-black text-yellow-300 transition-all duration-300 opacity-0 scale-75 drop-shadow">
                         +
                     </div>
 
@@ -181,18 +208,26 @@
                         <span>-</span>
                     </div>
 
+                    <!-- Confirm Button (Always visible initially, hides during evaluation) -->
+                    <button id="confirm-btn" onmouseenter="hideFloatingCard()" onclick="submitAnswer()" class="flex flex-col items-center justify-center w-24 h-36 bg-gradient-to-b from-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 font-black text-lg rounded-2xl shadow-xl transition transform active:scale-95 border-2 border-yellow-200">
+                        <span class="text-3xl mb-1">✅</span>
+                        <span>確定</span>
+                    </button>
+
                     <!-- Result Display Area -->
                     <div id="result-display" class="hidden items-center space-x-3 transition-all duration-300">
-                        <span class="text-3xl font-black text-yellow-300 drop-shadow">=</span>
-                        <div id="result-box" class="w-24 h-36 rounded-2xl border-3 border-yellow-400 bg-yellow-500/30 flex flex-col items-center justify-center font-black text-2xl text-yellow-200 shadow-2xl">
-                            <span id="result-value" class="text-3xl font-black">?</span>
+                        <!-- Equal Sign (+50% size: text-3xl -> text-[45px] / text-4xl) -->
+                        <span id="equal-sign" class="text-4xl font-black text-yellow-300 drop-shadow opacity-40 transition-all duration-300">=</span>
+                        <div id="result-box" class="w-24 h-36 rounded-2xl border-3 border-yellow-400/40 bg-yellow-500/10 flex flex-col items-center justify-center font-black text-2xl text-yellow-200/40 shadow-2xl transition-all duration-300">
+                            <!-- Increased font size by 30%: text-3xl -> text-4xl (approx 30% larger) -->
+                            <span id="result-value" class="text-4xl font-black">?</span>
                         </div>
                     </div>
                 </div>
             </div>
         </main>
 
-        <!-- Footer Hand (1 to 9 Cards) styled like Slay the Spire fan layout -->
+        <!-- Footer Hand (1 to 9 Cards) -->
         <footer id="hand-footer" class="w-full bg-indigo-950/80 backdrop-blur-md border border-white/30 p-3 rounded-3xl shadow-2xl relative">
             <div class="flex justify-between items-center mb-2 px-1">
                 <span class="text-sm font-black text-yellow-200 tracking-wider flex items-center space-x-1">
@@ -202,7 +237,7 @@
                     <span>🔄 換目標</span>
                 </button>
             </div>
-            <!-- Slay the Spire Hand Container with tighter overlapping (space-x negative increase) -->
+            <!-- Slay the Spire Hand Container -->
             <div id="cards-container" class="flex justify-center items-end h-28 -space-x-8 px-1 pb-1 overflow-visible">
                 <!-- Cards will be dynamically injected here -->
             </div>
@@ -210,7 +245,7 @@
 
     </div>
 
-    <!-- Floating card following mouse / finger with 50% larger preview -->
+    <!-- Floating card following mouse / finger -->
     <div id="floating-card" class="fixed pointer-events-none z-50 hidden w-28 h-40 flex flex-col items-center justify-between shadow-2xl opacity-95 scale-[1.5] transform -translate-x-1/2 -translate-y-full">
         <img id="float-img" src="" alt="預覽卡" class="w-full h-full object-contain drop-shadow-2xl">
     </div>
@@ -219,8 +254,8 @@
     <div id="level-up-modal" class="fixed inset-0 bg-indigo-950/80 backdrop-blur-md hidden items-center justify-center z-50 p-4 pointer-events-none">
         <div class="level-up-anim bg-gradient-to-b from-amber-400 via-orange-500 to-rose-600 border-4 border-yellow-200 p-8 rounded-3xl text-center shadow-[0_0_60px_rgba(250,204,21,0.9)] max-w-sm w-full">
             <div class="text-6xl mb-2">⚡🔥⚡</div>
-            <h2 class="text-5xl font-black text-white tracking-wider drop-shadow-[0_4px_8px_rgba(0,0,0,0.6)] mb-3">LEVEL UP!!</h2>
-            <p class="text-yellow-100 text-lg font-black drop-shadow">
+            <h2 id="level-up-title" class="text-5xl font-black text-white tracking-wider drop-shadow-[0_4px_8px_rgba(0,0,0,0.6)] mb-3">LEVEL UP!!</h2>
+            <p id="level-up-desc" class="text-yellow-100 text-lg font-black drop-shadow">
                 怪獸開始主動出牌了！<br>用「減法」找出第 2 張卡吧！
             </p>
         </div>
@@ -239,14 +274,31 @@
         </div>
     </div>
 
-    <!-- Instructions Modal -->
+    <!-- Instructions Modal with Difficulty Selection -->
     <div id="start-modal" class="fixed inset-0 bg-indigo-950/85 backdrop-blur-md flex items-center justify-center z-50 p-4">
         <div class="bg-indigo-900 border-2 border-yellow-400 max-w-md w-full p-6 md:p-8 rounded-3xl shadow-2xl text-center">
-            <div class="text-6xl mb-4">⭐</div>
+            <div class="text-5xl mb-3">⭐</div>
             <h2 class="text-3xl font-black text-yellow-300 mb-3 drop-shadow">卡牌加法大挑戰</h2>
-            <p class="text-yellow-100 text-base leading-relaxed mb-6 font-bold">
-                畫面上方會出現一個目標數字（2 到 18）。將滑鼠移到下方手牌區，卡片就會跟隨滑鼠，移到答題格子即可自動放卡合成目標數字！限時 60 秒！
+            <p class="text-yellow-100 text-sm leading-relaxed mb-5 font-bold">
+                請選擇遊戲難度，將手牌放入格子中合成目標數字！限時 60 秒！
             </p>
+
+            <!-- Difficulty Selection Buttons Stacked Vertically -->
+            <div class="flex flex-col space-y-2.5 mb-6">
+                <button onclick="selectDifficulty('easy')" id="diff-easy" class="py-3 px-4 bg-indigo-950 hover:bg-indigo-800 border-2 border-indigo-400 rounded-2xl text-white font-black text-sm transition shadow-inner flex justify-between items-center">
+                    <span>初級 (5的合成)</span>
+                    <span class="text-xs text-indigo-300 font-normal">卡1-4 / 目標2-5</span>
+                </button>
+                <button onclick="selectDifficulty('medium')" id="diff-medium" class="py-3 px-4 bg-amber-600 border-2 border-yellow-300 rounded-2xl text-white font-black text-sm transition shadow-lg ring-2 ring-yellow-400 flex justify-between items-center">
+                    <span>中級 (10的合成)</span>
+                    <span class="text-xs text-yellow-100 font-normal">卡1-9 / 目標2-10</span>
+                </button>
+                <button onclick="selectDifficulty('hard')" id="diff-hard" class="py-3 px-4 bg-indigo-950 hover:bg-indigo-800 border-2 border-indigo-400 rounded-2xl text-white font-black text-sm transition shadow-inner flex justify-between items-center">
+                    <span>高級 (18的合成)</span>
+                    <span class="text-xs text-indigo-300 font-normal">卡1-9 / 目標2-18</span>
+                </button>
+            </div>
+
             <button onclick="startGame()" class="w-full py-4 bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 font-black text-xl rounded-2xl shadow-2xl shadow-yellow-400/30 transition">
                 開始遊戲！
             </button>
@@ -423,17 +475,20 @@
         let timeLeft = 60;
         let currentLevel = 1;
         let isLevel2 = false;
+        let isLevel3 = false;
         let isLevelingUp = false;
         let gameActive = false;
         let isEvaluating = false;
         let targetNumber = 11;
+        let currentDifficulty = 'medium'; // Default difficulty
         let isDraggingCard = false;
         let lastHoveredCardValue = null;
         let lastHoveredCardImg = null;
         let droppedCards = [null, null];
+        let disabledHandValues = new Set();
         let timerInterval = null;
 
-        const handCards = [
+        const allHandCards = [
             { value: 1, img: "https://pmath-lab.github.io/number18/p1.png" },
             { value: 2, img: "https://pmath-lab.github.io/number18/p2.png" },
             { value: 3, img: "https://pmath-lab.github.io/number18/p3.png" },
@@ -445,7 +500,33 @@
             { value: 9, img: "https://pmath-lab.github.io/number18/p9.png" }
         ];
 
-        function startGame() {
+        let handCards = [...allHandCards];
+
+        // Ensure selectDifficulty is globally accessible
+        window.selectDifficulty = function(diff) {
+            initAudio();
+            playSound('select');
+            currentDifficulty = diff;
+
+            ['easy', 'medium', 'hard'].forEach(d => {
+                const btn = document.getElementById(`diff-${d}`);
+                if (btn) {
+                    if (d === diff) {
+                        btn.className = "py-3 px-4 bg-amber-600 border-2 border-yellow-300 rounded-2xl text-white font-black text-sm transition shadow-lg ring-2 ring-yellow-400 flex justify-between items-center";
+                    } else {
+                        btn.className = "py-3 px-4 bg-indigo-950 hover:bg-indigo-800 border-2 border-indigo-400 rounded-2xl text-white font-black text-sm transition shadow-inner flex justify-between items-center";
+                    }
+                }
+            });
+
+            if (diff === 'easy') {
+                handCards = allHandCards.slice(0, 4);
+            } else {
+                handCards = allHandCards.slice(0, 9);
+            }
+        };
+
+        window.startGame = function() {
             initAudio();
             playSound('correct');
             const startModal = document.getElementById('start-modal');
@@ -454,9 +535,11 @@
             timeLeft = 60;
             currentLevel = 1;
             isLevel2 = false;
+            isLevel3 = false;
             gameActive = true;
             isEvaluating = false;
             droppedCards = [null, null];
+            disabledHandValues.clear();
 
             const scoreEl = document.getElementById('score');
             const timerEl = document.getElementById('timer');
@@ -464,6 +547,12 @@
             if (scoreEl) scoreEl.innerText = score;
             if (timerEl) timerEl.innerText = timeLeft;
             if (lvlBadge) lvlBadge.classList.add('hidden');
+
+            if (currentDifficulty === 'easy') {
+                handCards = allHandCards.slice(0, 4);
+            } else {
+                handCards = [...allHandCards];
+            }
 
             generateTarget();
             initHand();
@@ -488,19 +577,43 @@
                     playSound('wrong');
                 }
             }, 1000);
-        }
+        };
 
-        function restartGame() {
+        window.restartGame = function() {
             const gameOverModal = document.getElementById('game-over-modal');
             if (gameOverModal) {
                 gameOverModal.classList.add('hidden');
                 gameOverModal.classList.remove('flex');
             }
-            startGame();
-        }
+            window.startGame();
+        };
 
-        // Animate monster playing the first card into Slot 1 in Level 2
+        window.shuffleCards = function() {
+            initAudio();
+            playSound('select');
+            generateTarget();
+        };
+
+        window.clearSelection = function() {
+            if (isEvaluating) return;
+            initAudio();
+            playSound('select');
+            if ((currentLevel === 2 || currentLevel === 3) && monsterActiveCard) {
+                droppedCards = [monsterActiveCard, null];
+            } else {
+                droppedCards = [null, null];
+            }
+            updateSlots();
+            const msg = document.getElementById('status-message');
+            if (msg) msg.innerText = "已清空選卡，請重新放入卡片！";
+        };
+
+        // Store monster's active card persistently for level 2 and 3
+        let monsterActiveCard = null;
+
+        // Animate monster playing the first card into Slot 1 in Level 2 & 3
         function animateMonsterPlayCard(cardObj) {
+            monsterActiveCard = cardObj;
             const targetZone = document.getElementById('target-drop-zone');
             const slot1 = document.getElementById('slot-1');
             if (!targetZone || !slot1) {
@@ -533,29 +646,41 @@
 
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
-                    flyer.style.transform = `translate(${dx}px, ${dy}px) scale(1)`;
+                    flyer.style.transform = `translate(${-dx}px, ${-dy}px) scale(1)`;
                 });
             });
 
             setTimeout(() => {
                 flyer.remove();
-                playSound('drop');
                 droppedCards[0] = cardObj;
                 updateSlots();
                 isEvaluating = false;
-                const msgEl = document.getElementById('status-message');
-                if (msgEl) {
-                    msgEl.innerText = `👾 怪獸出了 ${cardObj.value}！請用減法 (${targetNumber} - ${cardObj.value}) 找出格子 2 的卡！`;
-                    msgEl.className = "mt-2.5 text-sm font-black text-amber-300 h-6 transition-all duration-300 drop-shadow";
-                }
             }, 500);
         }
 
-        // Function to generate a new target number between 2 and 18 and update the image & hearts
+        // Function to generate a new target number and update the image & hearts
         function generateTarget() {
-            let nextTarget = Math.floor(Math.random() * 17) + 2;
+            let minTarget = 2;
+            let maxTarget = 18;
+            let maxCardVal = 9;
+
+            if (currentDifficulty === 'easy') {
+                minTarget = 2;
+                maxTarget = 5;
+                maxCardVal = 4;
+            } else if (currentDifficulty === 'medium') {
+                minTarget = 2;
+                maxTarget = 10;
+                maxCardVal = 9;
+            } else {
+                minTarget = 2;
+                maxTarget = 18;
+                maxCardVal = 9;
+            }
+
+            let nextTarget = Math.floor(Math.random() * (maxTarget - minTarget + 1)) + minTarget;
             while (nextTarget === targetNumber) {
-                nextTarget = Math.floor(Math.random() * 17) + 2;
+                nextTarget = Math.floor(Math.random() * (maxTarget - minTarget + 1)) + minTarget;
             }
             targetNumber = nextTarget;
 
@@ -572,33 +697,123 @@
             const heartsGrid = document.getElementById('hearts-grid');
             if (heartsGrid) {
                 heartsGrid.innerHTML = '';
-                for (let i = 0; i < 18; i++) {
+                const maxHearts = currentDifficulty === 'easy' ? 5 : (currentDifficulty === 'medium' ? 10 : 18);
+                heartsGrid.className = currentDifficulty === 'easy' ? "grid grid-cols-5 gap-2 w-48 max-w-full justify-items-center" : (currentDifficulty === 'medium' ? "grid grid-cols-5 gap-2 w-48 max-w-full justify-items-center" : "grid grid-cols-6 gap-2 w-52 max-w-full justify-items-center");
+                
+                for (let i = 0; i < maxHearts; i++) {
                     const heartEl = document.createElement('span');
                     if (i < targetNumber) {
-                        heartEl.className = "text-base text-rose-400 drop-shadow transform scale-110 transition-all";
+                        heartEl.className = "text-xl sm:text-2xl text-rose-400 drop-shadow-md transform scale-125 transition-all";
                         heartEl.innerHTML = "❤️";
                     } else {
-                        heartEl.className = "text-base text-white/20 select-none";
+                        heartEl.className = "text-xl sm:text-2xl text-white/20 select-none";
                         heartEl.innerHTML = "🤍";
                     }
                     heartsGrid.appendChild(heartEl);
                 }
             }
 
+            disabledHandValues.clear();
+            if (currentLevel === 3 && currentDifficulty !== 'easy') {
+                // Pick valid pairs that sum to targetNumber from available handCards
+                let possiblePairs = [];
+                for (let i = 0; i < handCards.length; i++) {
+                    for (let j = i + 1; j < handCards.length; j++) {
+                        if (handCards[i].value + handCards[j].value === targetNumber) {
+                            possiblePairs.push([handCards[i].value, handCards[j].value]);
+                        }
+                    }
+                }
+                if (possiblePairs.length > 0) {
+                    const safePair = possiblePairs[Math.floor(Math.random() * possiblePairs.length)];
+                    let candidateCards = handCards.filter(c => c.value !== safePair[0] && c.value !== safePair[1]);
+                    candidateCards.sort(() => Math.random() - 0.5);
+                    
+                    let numToDisable = Math.min(candidateCards.length, Math.floor(Math.random() * 3) + 2);
+                    let newlyDisabled = [];
+                    for (let k = 0; k < numToDisable; k++) {
+                        newlyDisabled.push(candidateCards[k].value);
+                    }
+
+                    // Render hand normally first, then trigger lightning animation
+                    initHand(false);
+                    setTimeout(() => {
+                        animateLightningStrikes(newlyDisabled);
+                    }, 100);
+                } else {
+                    initHand(true);
+                }
+            } else {
+                initHand(true);
+            }
+
             if (currentLevel === 2) {
-                const minCard1 = Math.max(1, targetNumber - 9);
-                const maxCard1 = Math.min(9, targetNumber - 1);
-                const monsterVal = Math.floor(Math.random() * (maxCard1 - minCard1 + 1)) + minCard1;
-                const monsterCard = handCards.find(c => c.value === monsterVal);
+                const minCard1 = Math.max(1, targetNumber - maxCardVal);
+                const maxCard1 = Math.min(maxCardVal, targetNumber - 1);
+                let monsterVal = Math.floor(Math.random() * (maxCard1 - minCard1 + 1)) + minCard1;
+                let monsterCard = handCards.find(c => c.value === monsterVal);
+                if (!monsterCard && handCards.length > 0) {
+                    monsterCard = handCards[0];
+                }
                 droppedCards = [null, null];
                 updateSlots();
                 if (monsterCard) {
-                    animateMonsterPlayCard({ value: monsterCard.value, img: monsterCard.img });
+                    animateMonsterPlayCard({ value: monsterCard.value, img: monsterCard.img, isMonsterGenerated: true });
                 }
+            } else {
+                monsterActiveCard = null;
+                droppedCards = [null, null];
+                updateSlots();
             }
         }
 
-        function initHand() {
+        // Animate lightning from monster center to disabled cards in hand
+        function animateLightningStrikes(disabledVals) {
+            disabledVals.forEach(val => disabledHandValues.add(val));
+            const targetImg = document.getElementById('target-img');
+            const container = document.getElementById('cards-container');
+            if (!targetImg || !container) {
+                initHand(true);
+                return;
+            }
+
+            const targetRect = targetImg.getBoundingClientRect();
+            const startX = targetRect.left + targetRect.width / 2;
+            const startY = targetRect.top + targetRect.height / 2;
+
+            const cardElements = container.children;
+            playSound('hit');
+
+            Array.from(cardElements).forEach((cardEl, idx) => {
+                const cardObj = handCards[idx];
+                if (cardObj && disabledVals.includes(cardObj.value)) {
+                    const cardRect = cardEl.getBoundingClientRect();
+                    const endX = cardRect.left + cardRect.width / 2;
+                    const endY = cardRect.top + cardRect.height / 2;
+
+                    // Draw lightning line
+                    const length = Math.hypot(endX - startX, endY - startY);
+                    const angle = Math.atan2(endY - startY, endX - startX) * (180 / Math.PI);
+
+                    const bolt = document.createElement('div');
+                    bolt.className = 'lightning-bolt';
+                    bolt.style.left = startX + 'px';
+                    bolt.style.top = startY + 'px';
+                    bolt.style.width = length + 'px';
+                    bolt.style.transform = `rotate(${angle}deg)`;
+                    document.body.appendChild(bolt);
+
+                    setTimeout(() => bolt.remove(), 350);
+                }
+            });
+
+            // Refresh hand to apply gray/disabled overlay after lightning strikes
+            setTimeout(() => {
+                initHand(true);
+            }, 300);
+        }
+
+        function initHand(enableEvents = true) {
             const container = document.getElementById('cards-container');
             if (!container) return;
             container.innerHTML = '';
@@ -610,43 +825,48 @@
                 const rotationDeg = offsetFromCenter * 3.5; 
                 const translateYPx = Math.pow(Math.abs(offsetFromCenter), 1.4) * 0.8; 
 
+                const isDisabled = disabledHandValues.has(card.value);
+
                 const cardEl = document.createElement('div');
-                cardEl.className = `card-hover sts-card w-14 h-20 sm:w-16 sm:h-24 flex flex-col items-center justify-center cursor-pointer relative select-none`;
+                cardEl.className = `card-hover sts-card w-14 h-20 sm:w-16 sm:h-24 flex flex-col items-center justify-center ${isDisabled ? 'opacity-40 grayscale cursor-not-allowed' : 'cursor-pointer'} relative select-none`;
                 cardEl.style.transform = `rotate(${rotationDeg}deg) translateY(${translateYPx}px)`;
                 cardEl.style.transformOrigin = `bottom center`;
 
                 cardEl.innerHTML = `
                     <img src="${card.img}" alt="卡${card.value}" class="w-full h-full object-contain drop-shadow-lg" onerror="this.onerror=null;this.src='https://placehold.co/60x80/4f46e5/facc15?text=${card.value}'">
+                    ${isDisabled ? '<div class="absolute inset-0 bg-black/40 rounded-xl flex items-center justify-center text-xl">⚡</div>' : ''}
                 `;
 
-                cardEl.addEventListener('mouseenter', (e) => {
-                    if (!gameActive || isEvaluating) return;
-                    if (lastHoveredCardValue !== card.value) {
-                        playSound('hover');
-                    }
-                    lastHoveredCardValue = card.value;
-                    lastHoveredCardImg = card.img;
-                    isDraggingCard = true;
-                    showFloatingCard(card.value, card.img, e.clientX, e.clientY);
-
-                    const allCards = container.children;
-                    for (let i = 0; i < allCards.length; i++) {
-                        if (i < index) {
-                            const diff = index - i;
-                            allCards[i].style.transform = `rotate(${(i - centerIdx) * 3.5}deg) translateY(${Math.pow(Math.abs(i - centerIdx), 1.4) * 0.8}px) translateX(-${diff * 6}px) scale(1)`;
-                        } else if (i > index) {
-                            const diff = i - index;
-                            allCards[i].style.transform = `rotate(${(i - centerIdx) * 3.5}deg) translateY(${Math.pow(Math.abs(i - centerIdx), 1.4) * 0.8}px) translateX(${diff * 6}px) scale(1)`;
-                        } else {
-                            allCards[i].style.transform = `rotate(0deg) translateY(-6px) scale(1.3) translateX(0px)`;
-                            allCards[i].style.zIndex = '50';
+                if (!isDisabled && enableEvents) {
+                    cardEl.addEventListener('mouseenter', (e) => {
+                        if (!gameActive || isEvaluating) return;
+                        if (lastHoveredCardValue !== card.value) {
+                            playSound('select');
                         }
-                    }
-                });
+                        lastHoveredCardValue = card.value;
+                        lastHoveredCardImg = card.img;
+                        isDraggingCard = true;
+                        showFloatingCard(card.value, card.img, e.clientX, e.clientY);
 
-                cardEl.addEventListener('mouseleave', () => {
-                    cardEl.style.zIndex = '1';
-                });
+                        const allCards = container.children;
+                        for (let i = 0; i < allCards.length; i++) {
+                            if (i < index) {
+                                const diff = index - i;
+                                allCards[i].style.transform = `rotate(${(i - centerIdx) * 3.5}deg) translateY(${Math.pow(Math.abs(i - centerIdx), 1.4) * 0.8}px) translateX(-${diff * 6}px) scale(1)`;
+                            } else if (i > index) {
+                                const diff = i - index;
+                                allCards[i].style.transform = `rotate(${(i - centerIdx) * 3.5}deg) translateY(${Math.pow(Math.abs(i - centerIdx), 1.4) * 0.8}px) translateX(${diff * 6}px) scale(1)`;
+                            } else {
+                                allCards[i].style.transform = `rotate(0deg) translateY(-6px) scale(1.3) translateX(0px)`;
+                                allCards[i].style.zIndex = '50';
+                            }
+                        }
+                    });
+
+                    cardEl.addEventListener('mouseleave', () => {
+                        cardEl.style.zIndex = '1';
+                    });
+                }
 
                 container.appendChild(cardEl);
             });
@@ -662,6 +882,11 @@
             const touch = e.touches[0];
             
             const elem = document.elementFromPoint(touch.clientX, touch.clientY);
+            if (elem && elem.closest('#confirm-btn')) {
+                hideFloatingCard();
+                return;
+            }
+
             if (elem) {
                 const cardEl = elem.closest('.sts-card');
                 if (cardEl && cardEl.parentNode.id === 'cards-container') {
@@ -670,7 +895,7 @@
                         const cardObj = handCards.find(c => imgEl.src.includes(`p${c.value}.png`) || imgEl.alt.includes(c.value));
                         if (cardObj) {
                             if (lastHoveredCardValue !== cardObj.value) {
-                                playSound('hover');
+                                playSound('select');
                             }
                             lastHoveredCardValue = cardObj.value;
                             lastHoveredCardImg = cardObj.img;
@@ -695,23 +920,44 @@
                 const rect1 = slot1.getBoundingClientRect();
                 const rect2 = slot2.getBoundingClientRect();
 
-                if (currentLevel === 1 && touch.clientX >= rect1.left && touch.clientX <= rect1.right && touch.clientY >= rect1.top && touch.clientY <= rect1.bottom) {
-                    droppedCards[0] = { value: lastHoveredCardValue, img: lastHoveredCardImg };
+                if (touch.clientX >= rect1.left && touch.clientX <= rect1.right && touch.clientY >= rect1.top && touch.clientY <= rect1.bottom) {
+                    if (currentLevel === 2 && monsterActiveCard) {
+                        return;
+                    }
+                    if (currentLevel === 3 && monsterActiveCard) {
+                        droppedCards[1] = { value: lastHoveredCardValue, img: lastHoveredCardImg };
+                    } else {
+                        droppedCards[0] = { value: lastHoveredCardValue, img: lastHoveredCardImg };
+                    }
                     playSound('drop');
                     updateSlots();
-                    checkIfComplete();
                 } else if (touch.clientX >= rect2.left && touch.clientX <= rect2.right && touch.clientY >= rect2.top && touch.clientY <= rect2.bottom) {
                     droppedCards[1] = { value: lastHoveredCardValue, img: lastHoveredCardImg };
                     playSound('drop');
                     updateSlots();
-                    checkIfComplete();
                 }
             }
             hideFloatingCard();
             isDraggingCard = false;
         });
 
+        function checkIfComplete() {
+            // Auto check disabled, now waiting for Confirm button click
+        }
+
+        window.submitAnswer = function() {
+            if (isEvaluating || droppedCards[0] === null || droppedCards[1] === null) return;
+            isEvaluating = true;
+            runEvaluationAnimation();
+        };
+
         function handleDragMove(clientX, clientY) {
+            const elem = document.elementFromPoint(clientX, clientY);
+            if (elem && elem.closest('#confirm-btn')) {
+                hideFloatingCard();
+                return;
+            }
+
             const floatCard = document.getElementById('floating-card');
             floatCard.style.display = 'flex';
             floatCard.style.left = clientX + 'px';
@@ -722,18 +968,23 @@
             const rect1 = slot1.getBoundingClientRect();
             const rect2 = slot2.getBoundingClientRect();
 
-            if (currentLevel === 1 && clientX >= rect1.left && clientX <= rect1.right && clientY >= rect1.top && clientY <= rect1.bottom) {
-                droppedCards[0] = { value: lastHoveredCardValue, img: lastHoveredCardImg };
+            if (clientX >= rect1.left && clientX <= rect1.right && clientY >= rect1.top && clientY <= rect1.bottom) {
+                if (currentLevel === 2 && monsterActiveCard) {
+                    return;
+                }
+                if (currentLevel === 3 && monsterActiveCard) {
+                    droppedCards[1] = { value: lastHoveredCardValue, img: lastHoveredCardImg };
+                } else {
+                    droppedCards[0] = { value: lastHoveredCardValue, img: lastHoveredCardImg };
+                }
                 playSound('drop');
                 hideFloatingCard();
                 updateSlots();
-                checkIfComplete();
             } else if (clientX >= rect2.left && clientX <= rect2.right && clientY >= rect2.top && clientY <= rect2.bottom) {
                 droppedCards[1] = { value: lastHoveredCardValue, img: lastHoveredCardImg };
                 playSound('drop');
                 hideFloatingCard();
                 updateSlots();
-                checkIfComplete();
             }
         }
 
@@ -768,17 +1019,40 @@
             const slot2 = document.getElementById('slot-2');
             const plusSign = document.getElementById('plus-sign');
             const resultDisplay = document.getElementById('result-display');
+            const confirmBtn = document.getElementById('confirm-btn');
+
+            // Ensure confirm button is always visible when not evaluating
+            if (confirmBtn && !isEvaluating) {
+                confirmBtn.style.display = 'flex';
+            }
 
             if (droppedCards[0] !== null) {
-                const lockBadge = currentLevel === 2 ? `<span class="absolute -top-2 -left-2 bg-rose-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full shadow border border-white/50">👾怪獸出牌</span>` : '';
-                slot1.innerHTML = `
-                    ${lockBadge}
-                    <img src="${droppedCards[0].img}" alt="卡${droppedCards[0].value}" class="w-full h-full object-contain drop-shadow-md">
-                `;
+                if (droppedCards[0].isMonsterGenerated) {
+                    slot1.innerHTML = `
+                        <div class="w-full h-full bg-gradient-to-br from-amber-500 via-orange-600 to-rose-700 rounded-2xl border-2 border-yellow-300 p-2 flex flex-col justify-between items-center shadow-2xl relative overflow-visible">
+                            <div class="absolute -top-3 -left-3 w-12 h-12 bg-yellow-400 rounded-full border-2 border-white shadow-lg flex items-center justify-center text-rose-900 font-black text-2xl z-30 drop-shadow">
+                                ${droppedCards[0].value}
+                            </div>
+                            <div class="flex-1 flex items-center justify-center text-4xl drop-shadow-lg mt-3">
+                                ⚔️
+                            </div>
+                            <div class="text-[11px] font-black text-yellow-100 tracking-wider uppercase mb-1 bg-black/30 px-2 py-0.5 rounded-md">
+                                攻擊怪獸
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    slot1.innerHTML = `
+                        <img src="${droppedCards[0].img}" alt="卡${droppedCards[0].value}" class="w-full h-full object-contain drop-shadow-md">
+                    `;
+                }
                 slot1.className = "w-24 h-36 rounded-2xl flex flex-col items-center justify-center p-0 relative transition-all duration-300";
             } else {
-                slot1.innerHTML = `<span class="opacity-80 font-bold mb-1">格子 1</span><span>-</span>`;
-                slot1.className = "w-24 h-36 rounded-2xl border-3 border-dashed border-yellow-300/60 flex flex-col items-center justify-center font-black text-sm bg-indigo-950/40 text-yellow-200 transition-all duration-300 shadow-inner relative";
+                slot1.innerHTML = `
+                    <span class="opacity-80 font-bold mb-1">格子 1</span>
+                    <span>-</span>
+                `;
+                slot1.className = "w-24 h-36 rounded-2xl border-3 border-dashed border-yellow-300/60 flex flex-col items-center justify-center font-black text-sm bg-indigo-950/40 text-yellow-200 transition-all duration-300 shadow-inner";
             }
 
             if (droppedCards[1] !== null) {
@@ -787,250 +1061,301 @@
                 `;
                 slot2.className = "w-24 h-36 rounded-2xl flex flex-col items-center justify-center p-0 relative transition-all duration-300";
             } else {
-                slot2.innerHTML = `<span class="opacity-80 font-bold mb-1">格子 2</span><span>${isLevel2 ? '?' : '-'}</span>`;
-                slot2.className = "w-24 h-36 rounded-2xl border-3 border-dashed border-yellow-300/60 flex flex-col items-center justify-center font-black text-sm bg-indigo-950/40 text-yellow-200 transition-all duration-300 shadow-inner relative";
+                slot2.innerHTML = `
+                    <span class="opacity-80 font-bold mb-1">格子 2</span>
+                    <span>-</span>
+                `;
+                slot2.className = "w-24 h-36 rounded-2xl border-3 border-dashed border-yellow-300/60 flex flex-col items-center justify-center font-black text-sm bg-indigo-950/40 text-yellow-200 transition-all duration-300 shadow-inner";
             }
 
             if (droppedCards[0] !== null || droppedCards[1] !== null) {
-                plusSign.classList.remove('opacity-0', 'scale-75');
-                plusSign.classList.add('opacity-100', 'scale-100');
+                plusSign.style.opacity = '1';
+                plusSign.style.transform = 'scale(1)';
             } else {
-                plusSign.classList.remove('opacity-100', 'scale-100');
-                plusSign.classList.add('opacity-0', 'scale-75');
-                resultDisplay.classList.add('hidden');
-                resultDisplay.classList.remove('flex');
+                plusSign.style.opacity = '0';
+                plusSign.style.transform = 'scale(0.75)';
             }
         }
 
-        function checkIfComplete() {
-            if (droppedCards[0] !== null && droppedCards[1] !== null && !isEvaluating) {
-                isEvaluating = true;
-                runEvaluationAnimation();
+        // Sequential 2-stage Attack Animation & Heart Reduction
+        function flySingleCard(slotId, cardObj, callback) {
+            const slotEl = document.getElementById(slotId);
+            const targetZone = document.getElementById('target-drop-zone');
+            const targetImg = document.getElementById('target-img');
+
+            if (!slotEl || !targetZone || !targetImg || !cardObj) {
+                if (callback) callback();
+                return;
             }
+
+            const slotRect = slotEl.getBoundingClientRect();
+            const targetRect = targetImg.getBoundingClientRect();
+
+            const flyer = document.createElement('div');
+            flyer.style.position = 'fixed';
+            flyer.style.left = slotRect.left + 'px';
+            flyer.style.top = slotRect.top + 'px';
+            flyer.style.width = slotRect.width + 'px';
+            flyer.style.height = slotRect.height + 'px';
+            flyer.style.zIndex = '9999';
+            flyer.style.pointerEvents = 'none';
+            flyer.style.transition = 'all 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+
+            if (cardObj.isMonsterGenerated) {
+                flyer.innerHTML = `
+                    <div class="w-full h-full bg-gradient-to-br from-amber-500 via-orange-600 to-rose-700 rounded-2xl border-2 border-yellow-300 p-2 flex flex-col justify-between items-center shadow-2xl">
+                        <div class="w-10 h-10 bg-yellow-400 rounded-full border-2 border-white flex items-center justify-center text-rose-900 font-black text-xl">
+                            ${cardObj.value}
+                        </div>
+                        <div class="text-3xl">⚔️</div>
+                    </div>
+                `;
+            } else {
+                flyer.innerHTML = `<img src="${cardObj.img}" class="w-full h-full object-contain drop-shadow-2xl">`;
+            }
+
+            document.body.appendChild(flyer);
+            slotEl.style.opacity = '0';
+
+            const dx = (targetRect.left + targetRect.width / 2) - (slotRect.left + slotRect.width / 2);
+            const dy = (targetRect.top + targetRect.height / 2) - (slotRect.top + slotRect.height / 2);
+
+            playSound('fly');
+
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    flyer.style.transform = `translate(${dx}px, ${dy}px) scale(0.35) rotate(15deg)`;
+                    flyer.style.opacity = '0.8';
+                });
+            });
+
+            setTimeout(() => {
+                flyer.remove();
+                slotEl.style.opacity = '1';
+
+                targetImg.classList.add('target-hit-anim');
+                playSound('hit');
+
+                setTimeout(() => {
+                    targetImg.classList.remove('target-hit-anim');
+                    if (callback) callback();
+                }, 450);
+            }, 450);
         }
 
         function runEvaluationAnimation() {
+            const val1 = droppedCards[0].value;
+            const val2 = droppedCards[1].value;
+            const sum = val1 + val2;
+
+            const confirmBtn = document.getElementById('confirm-btn');
+            if (confirmBtn) confirmBtn.style.display = 'none';
+
             const slot1 = document.getElementById('slot-1');
             const plusSign = document.getElementById('plus-sign');
             const slot2 = document.getElementById('slot-2');
             const resultDisplay = document.getElementById('result-display');
+            const equalSign = document.getElementById('equal-sign');
+            const resultBox = document.getElementById('result-box');
             const resultValue = document.getElementById('result-value');
-            const msgEl = document.getElementById('status-message');
+            const statusMsg = document.getElementById('status-message');
 
-            msgEl.innerText = "✨ 計算中...";
-            msgEl.className = "mt-2.5 text-xs font-black text-amber-200 h-6 transition-all duration-300 drop-shadow";
+            if (statusMsg) statusMsg.innerText = "驗算中...";
 
-            playSound('step', 0);
-            slot1.classList.add('ring-4', 'ring-yellow-300', 'scale-105', 'bg-amber-100');
+            // Immediately show plus, equal sign, and result box container placeholder
+            plusSign.style.opacity = '1';
+            plusSign.style.transform = 'scale(1)';
+            resultDisplay.classList.remove('hidden');
+            resultDisplay.classList.add('flex');
+            equalSign.style.opacity = '0.4';
+            resultBox.className = "w-24 h-36 rounded-2xl border-3 border-yellow-400/40 bg-yellow-500/10 flex flex-col items-center justify-center font-black text-2xl text-yellow-200/40 shadow-2xl transition-all duration-300";
+            resultValue.innerText = "?";
 
-            setTimeout(() => {
-                playSound('step', 1);
-                slot1.classList.remove('ring-4', 'ring-yellow-300', 'scale-105', 'bg-amber-100');
-                plusSign.classList.add('scale-125', 'text-yellow-300', 'drop-shadow-[0_0_12px_rgba(250,204,21,0.9)]');
-            }, 500);
-
-            setTimeout(() => {
-                playSound('step', 2);
-                plusSign.classList.remove('scale-125', 'text-yellow-300', 'drop-shadow-[0_0_12px_rgba(250,204,21,0.9)]');
-                slot2.classList.add('ring-4', 'ring-yellow-300', 'scale-105', 'bg-amber-100');
-            }, 1000);
+            // Step 1: Highlight Slot 1 for 1 second
+            slot1.classList.add('highlight-glow');
+            playSound('select');
 
             setTimeout(() => {
-                slot2.classList.remove('ring-4', 'ring-yellow-300', 'scale-105', 'bg-amber-100');
-                
-                const card1 = droppedCards[0];
-                const card2 = droppedCards[1];
-                const val1 = card1.value;
-                const val2 = card2.value;
-                const sum = val1 + val2;
+                slot1.classList.remove('highlight-glow');
+                // Step 2: Highlight Plus sign for 1 second
+                plusSign.classList.add('highlight-glow');
+                playSound('select');
 
-                resultValue.innerText = sum;
-                resultDisplay.classList.remove('hidden');
-                resultDisplay.classList.add('flex');
-                
-                if (sum === targetNumber) {
-                    playSound('correct');
-                    
-                    // Score based on remaining time (e.g., base 1 point + bonus points from remaining seconds)
-                    const timeBonus = Math.max(1, Math.floor(timeLeft / 5));
-                    const earnedScore = 1 + timeBonus;
-                    score += earnedScore;
-                    document.getElementById('score').innerText = score;
-                    
-                    timeLeft = 60;
-                    document.getElementById('timer').innerText = timeLeft;
-
-                    msgEl.innerText = `🎉 答對了！ ${val1} + ${val2} = ${sum} (+${earnedScore}分，時間重置 60 秒！)`;
-                    msgEl.className = "mt-2.5 text-xs font-black text-emerald-300 h-6 transition-all duration-300 drop-shadow";
-
-                    const targetZone = document.getElementById('target-drop-zone');
-                    const targetImg = document.getElementById('target-img');
-                    const heartsGrid = document.getElementById('hearts-grid');
-                    const heartSpans = heartsGrid.children;
-
-                    function flySingleCard(slotEl, cardImgUrl, onHitCallback) {
-                        const targetRect = targetZone.getBoundingClientRect();
-                        const slotRect = slotEl.getBoundingClientRect();
-
-                        const targetCenterX = targetRect.left + targetRect.width / 2;
-                        const targetCenterY = targetRect.top + targetRect.height / 2;
-                        const slotCenterX = slotRect.left + slotRect.width / 2;
-                        const slotCenterY = slotRect.top + slotRect.height / 2;
-
-                        const dx = targetCenterX - slotCenterX;
-                        const dy = targetCenterY - slotCenterY;
-
-                        const flyer = document.createElement('div');
-                        flyer.style.position = 'fixed';
-                        flyer.style.left = slotRect.left + 'px';
-                        flyer.style.top = slotRect.top + 'px';
-                        flyer.style.width = slotRect.width + 'px';
-                        flyer.style.height = slotRect.height + 'px';
-                        flyer.style.zIndex = '9999';
-                        flyer.style.pointerEvents = 'none';
-                        flyer.style.transition = 'transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.55s ease-in';
-                        flyer.style.transform = 'translate(0px, 0px) scale(1)';
-                        flyer.innerHTML = `<img src="${cardImgUrl}" class="w-full h-full object-contain drop-shadow-2xl">`;
-                        document.body.appendChild(flyer);
-
-                        slotEl.style.opacity = '0';
-                        playSound('fly');
-
-                        requestAnimationFrame(() => {
-                            requestAnimationFrame(() => {
-                                flyer.style.transform = `translate(${dx}px, ${dy}px) scale(0.35)`;
-                            });
-                        });
-
-                        setTimeout(() => {
-                            flyer.remove();
-                            playSound('hit');
-                            targetImg.classList.add('target-hit-anim');
-                            setTimeout(() => targetImg.classList.remove('target-hit-anim'), 450);
-                            if (onHitCallback) onHitCallback();
-                        }, 550);
-                    }
-
-                    function deductHearts(startIndex, count, onCompleteCallback) {
-                        for (let i = 0; i < count; i++) {
-                            const heartIdx = startIndex + i;
-                            if (heartIdx < heartSpans.length) {
-                                setTimeout(() => {
-                                    playSound('heart', heartIdx);
-                                    heartSpans[heartIdx].innerHTML = "🖤";
-                                    heartSpans[heartIdx].className = "text-base text-slate-800 drop-shadow transform scale-125 transition-all";
-                                }, i * 150);
-                            }
-                        }
-                        setTimeout(() => {
-                            if (onCompleteCallback) onCompleteCallback();
-                        }, count * 150 + 250);
-                    }
-
-                    flySingleCard(slot1, card1.img, () => {
-                        deductHearts(0, val1, () => {
-                            flySingleCard(slot2, card2.img, () => {
-                                deductHearts(val1, val2, () => {
-                                    setTimeout(() => {
-                                        slot1.style.opacity = '1';
-                                        slot2.style.opacity = '1';
-                                        droppedCards = [null, null];
-                                        resultDisplay.classList.add('hidden');
-                                        resultDisplay.classList.remove('flex');
-                                        
-                                        if (score >= 40 && currentLevel === 1) {
-                                            currentLevel = 2;
-                                            isLevel2 = true;
-                                            isLevelingUp = true;
-                                            playSound('levelup');
-                                            const lvlModal = document.getElementById('level-up-modal');
-                                            const lvlBadge = document.getElementById('level-badge');
-                                            const slotLabel = document.getElementById('slot-instruction-label');
-                                            if (lvlModal) {
-                                                lvlModal.classList.remove('hidden');
-                                                lvlModal.classList.add('flex');
-                                            }
-                                            if (lvlBadge) {
-                                                lvlBadge.classList.remove('hidden');
-                                            }
-                                            if (slotLabel) {
-                                                slotLabel.innerHTML = `<span>⚔️</span> <span>用減法找出格子 2 的卡片</span>`;
-                                            }
-                                            setTimeout(() => {
-                                                if (lvlModal) {
-                                                    lvlModal.classList.add('hidden');
-                                                    lvlModal.classList.remove('flex');
-                                                }
-                                                isLevelingUp = false;
-                                                isEvaluating = false;
-                                                updateSlots();
-                                                generateTarget();
-                                            }, 2400);
-                                        } else {
-                                            msgEl.innerText = currentLevel === 2 ? "請用減法找出格子 2 的卡片" : "請將 2 張卡片拖進下方對應格子";
-                                            msgEl.className = "mt-2.5 text-sm font-bold text-yellow-200 h-6 transition-all duration-300 drop-shadow";
-                                            isEvaluating = false;
-                                            updateSlots();
-                                            generateTarget();
-                                        }
-                                    }, 300);
-                                });
-                            });
-                        });
-                    });
-
-                } else {
-                    playSound('wrong');
-                    msgEl.innerText = `❌ 總和是 ${sum}，不是 ${targetNumber}，再試一次！`;
-                    msgEl.className = "mt-2.5 text-sm font-black text-rose-300 h-6 transition-all duration-300 drop-shadow";
+                setTimeout(() => {
+                    plusSign.classList.remove('highlight-glow');
+                    // Step 3: Highlight Slot 2 for 1 second
+                    slot2.classList.add('highlight-glow');
+                    playSound('select');
 
                     setTimeout(() => {
-                        if (currentLevel === 2) {
-                            droppedCards[1] = null;
-                        } else {
-                            droppedCards = [null, null];
-                        }
-                        resultDisplay.classList.add('hidden');
-                        resultDisplay.classList.remove('flex');
-                        msgEl.innerText = currentLevel === 2 ? `👾 怪獸出了 ${droppedCards[0].value}！請用減法 (${targetNumber} - ${droppedCards[0].value}) 找出格子 2 的卡！` : "請將 2 張卡片拖進下方對應格子";
-                        msgEl.className = "mt-2.5 text-sm font-bold text-yellow-200 h-6 transition-all duration-300 drop-shadow";
-                        isEvaluating = false;
-                        updateSlots();
-                    }, 1500);
-                }
-            }, 1500);
-        }
+                        slot2.classList.remove('highlight-glow');
+                        // Step 4: Highlight Equals sign for 1 second
+                        equalSign.classList.add('highlight-glow');
+                        equalSign.style.opacity = '1';
+                        playSound('select');
 
-        function clearSelection() {
-            if (!gameActive || isEvaluating) return;
-            playSound('hover');
-            if (currentLevel === 2) {
-                droppedCards[1] = null;
-            } else {
-                droppedCards = [null, null];
-            }
-            hideFloatingCard();
-            updateSlots();
-            const msgEl = document.getElementById('status-message');
-            msgEl.innerText = currentLevel === 2 && droppedCards[0] ? `👾 怪獸出了 ${droppedCards[0].value}！請用減法 (${targetNumber} - ${droppedCards[0].value}) 找出格子 2 的卡！` : "請將 2 張卡片拖進下方對應格子";
-            msgEl.className = "mt-2.5 text-sm font-bold text-yellow-200 h-6 transition-all duration-300 drop-shadow";
-        }
+                        setTimeout(() => {
+                            equalSign.classList.remove('highlight-glow');
+                            // Step 5: Highlight Result box & display calculated number for 1 second
+                            resultBox.className = "w-24 h-36 rounded-2xl border-3 border-yellow-400 bg-yellow-500/30 flex flex-col items-center justify-center font-black text-2xl text-yellow-200 shadow-2xl highlight-glow transition-all duration-300";
+                            resultValue.innerText = sum;
+                            playSound('select');
 
-        function shuffleCards() {
-            if (!gameActive || isEvaluating) return;
-            playSound('drop');
-            droppedCards = [null, null];
-            hideFloatingCard();
-            updateSlots();
-            generateTarget();
-            
-            const msgEl = document.getElementById('status-message');
-            msgEl.innerText = "🔄 已切換新目標數字！";
-            setTimeout(() => {
-                if (currentLevel === 1) {
-                    msgEl.innerText = "請將 2 張卡片拖進下方對應格子";
-                }
-            }, 1000);
+                            setTimeout(() => {
+                                resultBox.classList.remove('highlight-glow');
+
+                                // Now proceed to attack animation & evaluation check
+                                if (sum === targetNumber) {
+                                    playSound('correct');
+                                    if (statusMsg) statusMsg.innerText = `太棒了！ ${val1} + ${val2} = ${targetNumber} 成功反擊怪獸！`;
+
+                                    const pointsEarned = Math.max(1, Math.floor(timeLeft / 6));
+                                    score += pointsEarned;
+                                    timeLeft = 60; // Reset time to 60s on correct answer
+                                    const scoreEl = document.getElementById('score');
+                                    const timerEl = document.getElementById('timer');
+                                    if (scoreEl) scoreEl.innerText = score;
+                                    if (timerEl) timerEl.innerText = timeLeft;
+
+                                    flySingleCard('slot-1', droppedCards[0], () => {
+                                        const hearts = document.querySelectorAll('#hearts-grid span');
+                                        let heartIdx = 0;
+                                        let count1 = 0;
+                                        const interval1 = setInterval(() => {
+                                            if (count1 < val1 && heartIdx < hearts.length) {
+                                                hearts[heartIdx].innerHTML = "🖤";
+                                                hearts[heartIdx].className = "text-base text-white/30 transition-all";
+                                                playSound('heart', heartIdx);
+                                                heartIdx++;
+                                                count1++;
+                                            } else {
+                                                clearInterval(interval1);
+                                                setTimeout(() => {
+                                                    flySingleCard('slot-2', droppedCards[1], () => {
+                                                        let count2 = 0;
+                                                        const interval2 = setInterval(() => {
+                                                            if (count2 < val2 && heartIdx < hearts.length) {
+                                                                hearts[heartIdx].innerHTML = "🖤";
+                                                                hearts[heartIdx].className = "text-base text-white/30 transition-all";
+                                                                playSound('heart', heartIdx);
+                                                                heartIdx++;
+                                                                count2++;
+                                                            } else {
+                                                                clearInterval(interval2);
+                                                                
+                                                                // Check Level Up condition for LV.3 (score >= 100 && not easy)
+                                                                if (score >= 100 && !isLevel3 && currentLevel === 2 && currentDifficulty !== 'easy') {
+                                                                    currentLevel = 3;
+                                                                    isLevel3 = true;
+                                                                    isLevelingUp = true;
+                                                                    playSound('levelup');
+
+                                                                    const lvlBadge = document.getElementById('level-badge');
+                                                                    if (lvlBadge) lvlBadge.innerText = "LV.3";
+
+                                                                    const levelModal = document.getElementById('level-up-modal');
+                                                                    const levelTitle = document.getElementById('level-up-title');
+                                                                    const levelDesc = document.getElementById('level-up-desc');
+                                                                    if (levelTitle) levelTitle.innerText = "ULTIMATE LEVEL UP!!";
+                                                                    if (levelDesc) levelDesc.innerHTML = "閃電襲擊！部分手牌被雷擊變成灰色！<br>利用餘下手牌組合數字！";
+
+                                                                    if (levelModal) {
+                                                                        levelModal.classList.remove('hidden');
+                                                                        levelModal.classList.add('flex');
+                                                                    }
+
+                                                                    setTimeout(() => {
+                                                                        if (levelModal) {
+                                                                            levelModal.classList.add('hidden');
+                                                                            levelModal.classList.remove('flex');
+                                                                        }
+                                                                        isLevelingUp = false;
+                                                                        resultDisplay.classList.add('hidden');
+                                                                        monsterActiveCard = null;
+                                                                        droppedCards = [null, null];
+                                                                        updateSlots();
+                                                                        generateTarget();
+                                                                        initHand();
+                                                                        isEvaluating = false;
+                                                                    }, 2400);
+
+                                                                // Check Level Up condition for LV.2 (score >= 40)
+                                                                } else if (score >= 40 && !isLevel2 && currentLevel === 1) {
+                                                                    currentLevel = 2;
+                                                                    isLevel2 = true;
+                                                                    isLevelingUp = true;
+                                                                    playSound('levelup');
+
+                                                                    const lvlBadge = document.getElementById('level-badge');
+                                                                    if (lvlBadge) lvlBadge.classList.remove('hidden');
+
+                                                                    const levelModal = document.getElementById('level-up-modal');
+                                                                    const levelTitle = document.getElementById('level-up-title');
+                                                                    const levelDesc = document.getElementById('level-up-desc');
+                                                                    if (levelTitle) levelTitle.innerText = "LEVEL UP!!";
+                                                                    if (levelDesc) levelDesc.innerHTML = "怪獸開始主動出牌了！<br>用玩家手牌打出正確算式洗走怪獸卡！";
+
+                                                                    if (levelModal) {
+                                                                        levelModal.classList.remove('hidden');
+                                                                        levelModal.classList.add('flex');
+                                                                    }
+
+                                                                    setTimeout(() => {
+                                                                        if (levelModal) {
+                                                                            levelModal.classList.add('hidden');
+                                                                            levelModal.classList.remove('flex');
+                                                                        }
+                                                                        isLevelingUp = false;
+                                                                        resultDisplay.classList.add('hidden');
+                                                                        monsterActiveCard = null;
+                                                                        droppedCards = [null, null];
+                                                                        updateSlots();
+                                                                        generateTarget();
+                                                                        isEvaluating = false;
+                                                                    }, 2200);
+                                                                } else {
+                                                                    setTimeout(() => {
+                                                                        resultDisplay.classList.add('hidden');
+                                                                        if (confirmBtn) confirmBtn.style.display = 'flex';
+                                                                        monsterActiveCard = null;
+                                                                        droppedCards = [null, null];
+                                                                        updateSlots();
+                                                                        if (currentLevel === 3) {
+                                                                            initHand();
+                                                                        }
+                                                                        generateTarget();
+                                                                        isEvaluating = false;
+                                                                    }, 600);
+                                                                }
+                                                            }
+                                                        }, 180);
+                                                    });
+                                                }, 180);
+                                            }
+                                        }, 180);
+                                    });
+
+                                } else {
+                                    playSound('wrong');
+                                    if (statusMsg) statusMsg.innerText = `答案是 ${sum}，不對喔！再試一次！`;
+                                    setTimeout(() => {
+                                        resultDisplay.classList.add('hidden');
+                                        if (confirmBtn) confirmBtn.style.display = 'flex';
+                                        if ((currentLevel === 2 || currentLevel === 3) && monsterActiveCard) {
+                                            droppedCards = [monsterActiveCard, null];
+                                        } else {
+                                            droppedCards = [null, null];
+                                        }
+                                        updateSlots();
+                                        isEvaluating = false;
+                                        if (statusMsg) statusMsg.innerText = "將手牌移出選卡區即可拖拉，移至格子即可自動放入！";
+                                    }, 1400);
+                                }
+                            }, 1000); // Result box highlight duration
+                        }, 1000); // Equals sign highlight duration
+                    }, 1000); // Slot 2 highlight duration
+                }, 1000); // Plus sign highlight duration
+            }, 1000); // Slot 1 highlight duration
         }
     </script>
 </body>
