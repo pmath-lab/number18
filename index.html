@@ -87,6 +87,17 @@
         .target-floating {
             animation: floatAnim 3s ease-in-out infinite;
         }
+
+        /* Level Up Pop Animation */
+        @keyframes levelUpPop {
+            0% { transform: scale(0.3) rotate(-10deg); opacity: 0; }
+            50% { transform: scale(1.15) rotate(3deg); opacity: 1; }
+            70% { transform: scale(0.95) rotate(-2deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        .level-up-anim {
+            animation: levelUpPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
     </style>
 </head>
 <body class="text-white select-none text-base">
@@ -94,25 +105,22 @@
     <!-- Scalable Game Viewport container -->
     <div id="game-viewport">
 
-        <!-- Header & Scoreboard -->
-        <header class="w-full flex justify-between items-center bg-white/20 backdrop-blur-md border border-white/40 p-3 rounded-2xl shadow-xl">
+        <!-- Header & Scoreboard (Left: Time -> Score -> Level, Right: Sound Toggle) -->
+        <header class="w-full flex justify-between items-center bg-white/20 backdrop-blur-md border border-white/40 px-4 py-3 rounded-2xl shadow-xl">
             <div class="flex items-center space-x-2.5">
-                <span class="text-2xl">⭐</span>
-                <div>
-                    <h1 class="text-lg font-black text-yellow-200 drop-shadow">卡牌加法大挑戰</h1>
-                    <p class="text-sm text-yellow-100 font-bold">快把卡牌拖到上方格子吧！</p>
+                <div class="bg-indigo-950/85 border border-indigo-400 px-3.5 py-1.5 rounded-xl shadow-inner flex items-center">
+                    <span class="text-sm font-black text-indigo-200 tracking-wide">時間：<span id="timer" class="text-white font-black">60</span>秒</span>
+                </div>
+                <div class="bg-indigo-950/85 border border-yellow-400 px-3.5 py-1.5 rounded-xl shadow-inner flex items-center">
+                    <span class="text-sm font-black text-yellow-200 tracking-wide">分數：<span id="score" class="text-yellow-400 font-black">0</span>分</span>
+                </div>
+                <div id="level-badge" class="hidden bg-gradient-to-r from-amber-500 to-rose-500 border border-yellow-200 px-2.5 py-1 rounded-xl shadow-lg">
+                    <span class="text-xs font-black text-white tracking-wider">LV.2</span>
                 </div>
             </div>
-            <div class="flex items-center space-x-2">
-                <div class="bg-indigo-950/80 border border-yellow-400 px-3 py-1 rounded-xl text-center shadow-inner">
-                    <div class="text-xs text-yellow-300 font-bold">分數</div>
-                    <div id="score" class="text-lg font-black text-yellow-400">0</div>
-                </div>
-                <div class="bg-indigo-950/80 border border-indigo-400 px-3 py-1 rounded-xl text-center shadow-inner">
-                    <div class="text-xs text-indigo-300 font-bold">時間</div>
-                    <div id="timer" class="text-lg font-black text-indigo-300">60s</div>
-                </div>
-            </div>
+            <button id="sound-toggle-btn" onclick="toggleSound()" class="bg-indigo-950/85 hover:bg-indigo-900 border border-pink-400 w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-inner transition" title="開關音效">
+                🔊
+            </button>
         </header>
 
         <!-- Main Game Area -->
@@ -147,7 +155,7 @@
             <!-- Card-Sized Drop Slots (Full Card Images without yellow grid boxes) -->
             <div class="flex flex-col items-center space-y-2 bg-white/15 border border-white/30 p-4 rounded-3xl backdrop-blur-md shadow-2xl w-full">
                 <div class="flex justify-between w-full px-1 items-center">
-                    <span class="text-sm text-yellow-200 font-black uppercase tracking-wider flex items-center space-x-1">
+                    <span id="slot-instruction-label" class="text-sm text-yellow-200 font-black uppercase tracking-wider flex items-center space-x-1">
                         <span>📥</span> <span>放入 2 張卡片</span>
                     </span>
                     <button onclick="clearSelection()" class="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-sm font-black rounded-xl text-white shadow transition">清空重選</button>
@@ -207,6 +215,17 @@
         <img id="float-img" src="" alt="預覽卡" class="w-full h-full object-contain drop-shadow-2xl">
     </div>
 
+    <!-- LEVEL UP Overlay Modal -->
+    <div id="level-up-modal" class="fixed inset-0 bg-indigo-950/80 backdrop-blur-md hidden items-center justify-center z-50 p-4 pointer-events-none">
+        <div class="level-up-anim bg-gradient-to-b from-amber-400 via-orange-500 to-rose-600 border-4 border-yellow-200 p-8 rounded-3xl text-center shadow-[0_0_60px_rgba(250,204,21,0.9)] max-w-sm w-full">
+            <div class="text-6xl mb-2">⚡🔥⚡</div>
+            <h2 class="text-5xl font-black text-white tracking-wider drop-shadow-[0_4px_8px_rgba(0,0,0,0.6)] mb-3">LEVEL UP!!</h2>
+            <p class="text-yellow-100 text-lg font-black drop-shadow">
+                怪獸開始主動出牌了！<br>用「減法」找出第 2 張卡吧！
+            </p>
+        </div>
+    </div>
+
     <!-- Game Over Modal -->
     <div id="game-over-modal" class="fixed inset-0 bg-indigo-950/85 backdrop-blur-md hidden items-center justify-center z-50 p-4">
         <div class="bg-indigo-900 border-2 border-yellow-400 max-w-sm w-full p-6 rounded-3xl text-center shadow-2xl">
@@ -254,9 +273,157 @@
         window.addEventListener('resize', resizeGame);
         window.addEventListener('DOMContentLoaded', resizeGame);
 
+        // Web Audio API Synthesizer for Game Sound Effects
+        let audioCtx = null;
+        let soundEnabled = true;
+
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) audioCtx = new AudioContext();
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const btn = document.getElementById('sound-toggle-btn');
+            if (btn) btn.innerText = soundEnabled ? '🔊' : '🔇';
+            if (soundEnabled) {
+                initAudio();
+                playSound('select');
+            }
+        }
+
+        function playSound(type, stepIndex = 0) {
+            if (!soundEnabled) return;
+            initAudio();
+            if (!audioCtx) return;
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'select') {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(520, now);
+                osc.frequency.exponentialRampToValueAtTime(780, now + 0.06);
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.06);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.06);
+            } else if (type === 'drop') {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(650, now + 0.1);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            } else if (type === 'step') {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(480 + stepIndex * 120, now);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.12);
+            } else if (type === 'correct') {
+                [523.25, 659.25, 783.99, 1046.5].forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+                    gain.gain.setValueAtTime(0.18, now + idx * 0.06);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.06 + 0.25);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now + idx * 0.06);
+                    osc.stop(now + idx * 0.06 + 0.25);
+                });
+            } else if (type === 'fly') {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(280, now);
+                osc.frequency.exponentialRampToValueAtTime(920, now + 0.45);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.45);
+            } else if (type === 'hit') {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(160, now);
+                osc.frequency.exponentialRampToValueAtTime(45, now + 0.28);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.28);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.28);
+            } else if (type === 'heart') {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                const pitch = 600 + (stepIndex % 18) * 35;
+                osc.frequency.setValueAtTime(pitch, now);
+                osc.frequency.exponentialRampToValueAtTime(pitch * 1.25, now + 0.08);
+                gain.gain.setValueAtTime(0.18, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.09);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.09);
+            } else if (type === 'wrong') {
+                [300, 220].forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.18);
+                    gain.gain.setValueAtTime(0.18, now + idx * 0.18);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.18 + 0.22);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now + idx * 0.18);
+                    osc.stop(now + idx * 0.18 + 0.22);
+                });
+            } else if (type === 'levelup') {
+                [440, 554.37, 659.25, 880, 1108.73, 1318.51].forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                    gain.gain.setValueAtTime(0.25, now + idx * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.08 + 0.35);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now + idx * 0.08);
+                    osc.stop(now + idx * 0.08 + 0.35);
+                });
+            }
+        }
+
         // Game State Variables & Data Definitions
         let score = 0;
         let timeLeft = 60;
+        let currentLevel = 1;
+        let isLevel2 = false;
+        let isLevelingUp = false;
         let gameActive = false;
         let isEvaluating = false;
         let targetNumber = 11;
@@ -278,10 +445,120 @@
             { value: 9, img: "https://pmath-lab.github.io/number18/p9.png" }
         ];
 
-        // Function to generate a new target number between 2 and 19 and update the image & hearts
+        function startGame() {
+            initAudio();
+            playSound('correct');
+            const startModal = document.getElementById('start-modal');
+            if (startModal) startModal.style.display = 'none';
+            score = 0;
+            timeLeft = 60;
+            currentLevel = 1;
+            isLevel2 = false;
+            gameActive = true;
+            isEvaluating = false;
+            droppedCards = [null, null];
+
+            const scoreEl = document.getElementById('score');
+            const timerEl = document.getElementById('timer');
+            const lvlBadge = document.getElementById('level-badge');
+            if (scoreEl) scoreEl.innerText = score;
+            if (timerEl) timerEl.innerText = timeLeft;
+            if (lvlBadge) lvlBadge.classList.add('hidden');
+
+            generateTarget();
+            initHand();
+            updateSlots();
+
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (!gameActive || isEvaluating || isLevelingUp) return;
+                timeLeft--;
+                const timerDisplay = document.getElementById('timer');
+                if (timerDisplay) timerDisplay.innerText = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    gameActive = false;
+                    const finalScoreEl = document.getElementById('final-score');
+                    const gameOverModal = document.getElementById('game-over-modal');
+                    if (finalScoreEl) finalScoreEl.innerText = score;
+                    if (gameOverModal) {
+                        gameOverModal.classList.remove('hidden');
+                        gameOverModal.classList.add('flex');
+                    }
+                    playSound('wrong');
+                }
+            }, 1000);
+        }
+
+        function restartGame() {
+            const gameOverModal = document.getElementById('game-over-modal');
+            if (gameOverModal) {
+                gameOverModal.classList.add('hidden');
+                gameOverModal.classList.remove('flex');
+            }
+            startGame();
+        }
+
+        // Animate monster playing the first card into Slot 1 in Level 2
+        function animateMonsterPlayCard(cardObj) {
+            const targetZone = document.getElementById('target-drop-zone');
+            const slot1 = document.getElementById('slot-1');
+            if (!targetZone || !slot1) {
+                droppedCards[0] = cardObj;
+                updateSlots();
+                return;
+            }
+
+            isEvaluating = true;
+            const targetRect = targetZone.getBoundingClientRect();
+            const slotRect = slot1.getBoundingClientRect();
+
+            const dx = (slotRect.left + slotRect.width / 2) - (targetRect.left + targetRect.width / 2);
+            const dy = (slotRect.top + slotRect.height / 2) - (targetRect.top + targetRect.height / 2);
+
+            const flyer = document.createElement('div');
+            flyer.style.position = 'fixed';
+            flyer.style.left = (targetRect.left + targetRect.width / 2 - slotRect.width / 2) + 'px';
+            flyer.style.top = (targetRect.top + targetRect.height / 2 - slotRect.height / 2) + 'px';
+            flyer.style.width = slotRect.width + 'px';
+            flyer.style.height = slotRect.height + 'px';
+            flyer.style.zIndex = '9999';
+            flyer.style.pointerEvents = 'none';
+            flyer.style.transition = 'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)';
+            flyer.style.transform = 'translate(0px, 0px) scale(0.3)';
+            flyer.innerHTML = `<img src="${cardObj.img}" class="w-full h-full object-contain drop-shadow-2xl">`;
+            document.body.appendChild(flyer);
+
+            playSound('fly');
+
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    flyer.style.transform = `translate(${dx}px, ${dy}px) scale(1)`;
+                });
+            });
+
+            setTimeout(() => {
+                flyer.remove();
+                playSound('drop');
+                droppedCards[0] = cardObj;
+                updateSlots();
+                isEvaluating = false;
+                const msgEl = document.getElementById('status-message');
+                if (msgEl) {
+                    msgEl.innerText = `👾 怪獸出了 ${cardObj.value}！請用減法 (${targetNumber} - ${cardObj.value}) 找出格子 2 的卡！`;
+                    msgEl.className = "mt-2.5 text-sm font-black text-amber-300 h-6 transition-all duration-300 drop-shadow";
+                }
+            }, 500);
+        }
+
+        // Function to generate a new target number between 2 and 18 and update the image & hearts
         function generateTarget() {
-            // Pick a random number between 2 and 19
-            targetNumber = Math.floor(Math.random() * 18) + 2;
+            let nextTarget = Math.floor(Math.random() * 17) + 2;
+            while (nextTarget === targetNumber) {
+                nextTarget = Math.floor(Math.random() * 17) + 2;
+            }
+            targetNumber = nextTarget;
+
             const targetImg = document.getElementById('target-img');
             if (targetImg) {
                 targetImg.src = `https://pmath-lab.github.io/number18/m${targetNumber}.png`;
@@ -292,11 +569,9 @@
                 targetNumText.innerText = targetNumber;
             }
 
-            // Update 6x3 Hearts Grid
             const heartsGrid = document.getElementById('hearts-grid');
             if (heartsGrid) {
                 heartsGrid.innerHTML = '';
-                // Total slots in 6x3 grid = 18 max, fill up to targetNumber with active hearts, rest transparent/inactive
                 for (let i = 0; i < 18; i++) {
                     const heartEl = document.createElement('span');
                     if (i < targetNumber) {
@@ -309,11 +584,23 @@
                     heartsGrid.appendChild(heartEl);
                 }
             }
+
+            if (currentLevel === 2) {
+                const minCard1 = Math.max(1, targetNumber - 9);
+                const maxCard1 = Math.min(9, targetNumber - 1);
+                const monsterVal = Math.floor(Math.random() * (maxCard1 - minCard1 + 1)) + minCard1;
+                const monsterCard = handCards.find(c => c.value === monsterVal);
+                droppedCards = [null, null];
+                updateSlots();
+                if (monsterCard) {
+                    animateMonsterPlayCard({ value: monsterCard.value, img: monsterCard.img });
+                }
+            }
         }
 
-        // Initialize Slay the Spire styled fan hand with tighter overlap spacing
         function initHand() {
             const container = document.getElementById('cards-container');
+            if (!container) return;
             container.innerHTML = '';
 
             const total = handCards.length;
@@ -332,9 +619,11 @@
                     <img src="${card.img}" alt="卡${card.value}" class="w-full h-full object-contain drop-shadow-lg" onerror="this.onerror=null;this.src='https://placehold.co/60x80/4f46e5/facc15?text=${card.value}'">
                 `;
 
-                // Hover listener for card hand
                 cardEl.addEventListener('mouseenter', (e) => {
                     if (!gameActive || isEvaluating) return;
+                    if (lastHoveredCardValue !== card.value) {
+                        playSound('hover');
+                    }
                     lastHoveredCardValue = card.value;
                     lastHoveredCardImg = card.img;
                     isDraggingCard = true;
@@ -363,13 +652,11 @@
             });
         }
 
-        // Global mouse move for floating card and slot hover detection
         document.addEventListener('mousemove', (e) => {
             if (!gameActive || isEvaluating || !isDraggingCard || lastHoveredCardValue === null) return;
             handleDragMove(e.clientX, e.clientY);
         });
 
-        // Touch support mapping finger to mouse functionality with 30% larger preview
         document.addEventListener('touchmove', (e) => {
             if (!gameActive || isEvaluating) return;
             const touch = e.touches[0];
@@ -382,6 +669,9 @@
                     if (imgEl) {
                         const cardObj = handCards.find(c => imgEl.src.includes(`p${c.value}.png`) || imgEl.alt.includes(c.value));
                         if (cardObj) {
+                            if (lastHoveredCardValue !== cardObj.value) {
+                                playSound('hover');
+                            }
                             lastHoveredCardValue = cardObj.value;
                             lastHoveredCardImg = cardObj.img;
                             isDraggingCard = true;
@@ -405,12 +695,14 @@
                 const rect1 = slot1.getBoundingClientRect();
                 const rect2 = slot2.getBoundingClientRect();
 
-                if (touch.clientX >= rect1.left && touch.clientX <= rect1.right && touch.clientY >= rect1.top && touch.clientY <= rect1.bottom) {
+                if (currentLevel === 1 && touch.clientX >= rect1.left && touch.clientX <= rect1.right && touch.clientY >= rect1.top && touch.clientY <= rect1.bottom) {
                     droppedCards[0] = { value: lastHoveredCardValue, img: lastHoveredCardImg };
+                    playSound('drop');
                     updateSlots();
                     checkIfComplete();
                 } else if (touch.clientX >= rect2.left && touch.clientX <= rect2.right && touch.clientY >= rect2.top && touch.clientY <= rect2.bottom) {
                     droppedCards[1] = { value: lastHoveredCardValue, img: lastHoveredCardImg };
+                    playSound('drop');
                     updateSlots();
                     checkIfComplete();
                 }
@@ -430,13 +722,15 @@
             const rect1 = slot1.getBoundingClientRect();
             const rect2 = slot2.getBoundingClientRect();
 
-            if (clientX >= rect1.left && clientX <= rect1.right && clientY >= rect1.top && clientY <= rect1.bottom) {
+            if (currentLevel === 1 && clientX >= rect1.left && clientX <= rect1.right && clientY >= rect1.top && clientY <= rect1.bottom) {
                 droppedCards[0] = { value: lastHoveredCardValue, img: lastHoveredCardImg };
+                playSound('drop');
                 hideFloatingCard();
                 updateSlots();
                 checkIfComplete();
             } else if (clientX >= rect2.left && clientX <= rect2.right && clientY >= rect2.top && clientY <= rect2.bottom) {
                 droppedCards[1] = { value: lastHoveredCardValue, img: lastHoveredCardImg };
+                playSound('drop');
                 hideFloatingCard();
                 updateSlots();
                 checkIfComplete();
@@ -476,7 +770,9 @@
             const resultDisplay = document.getElementById('result-display');
 
             if (droppedCards[0] !== null) {
+                const lockBadge = currentLevel === 2 ? `<span class="absolute -top-2 -left-2 bg-rose-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full shadow border border-white/50">👾怪獸出牌</span>` : '';
                 slot1.innerHTML = `
+                    ${lockBadge}
                     <img src="${droppedCards[0].img}" alt="卡${droppedCards[0].value}" class="w-full h-full object-contain drop-shadow-md">
                 `;
                 slot1.className = "w-24 h-36 rounded-2xl flex flex-col items-center justify-center p-0 relative transition-all duration-300";
@@ -491,7 +787,7 @@
                 `;
                 slot2.className = "w-24 h-36 rounded-2xl flex flex-col items-center justify-center p-0 relative transition-all duration-300";
             } else {
-                slot2.innerHTML = `<span class="opacity-80 font-bold mb-1">格子 2</span><span>-</span>`;
+                slot2.innerHTML = `<span class="opacity-80 font-bold mb-1">格子 2</span><span>${isLevel2 ? '?' : '-'}</span>`;
                 slot2.className = "w-24 h-36 rounded-2xl border-3 border-dashed border-yellow-300/60 flex flex-col items-center justify-center font-black text-sm bg-indigo-950/40 text-yellow-200 transition-all duration-300 shadow-inner relative";
             }
 
@@ -522,16 +818,19 @@
             const msgEl = document.getElementById('status-message');
 
             msgEl.innerText = "✨ 計算中...";
-            msgEl.className = "mt-2 text-xs font-black text-amber-200 h-5 transition-all duration-300 drop-shadow";
+            msgEl.className = "mt-2.5 text-xs font-black text-amber-200 h-6 transition-all duration-300 drop-shadow";
 
+            playSound('step', 0);
             slot1.classList.add('ring-4', 'ring-yellow-300', 'scale-105', 'bg-amber-100');
 
             setTimeout(() => {
+                playSound('step', 1);
                 slot1.classList.remove('ring-4', 'ring-yellow-300', 'scale-105', 'bg-amber-100');
                 plusSign.classList.add('scale-125', 'text-yellow-300', 'drop-shadow-[0_0_12px_rgba(250,204,21,0.9)]');
             }, 500);
 
             setTimeout(() => {
+                playSound('step', 2);
                 plusSign.classList.remove('scale-125', 'text-yellow-300', 'drop-shadow-[0_0_12px_rgba(250,204,21,0.9)]');
                 slot2.classList.add('ring-4', 'ring-yellow-300', 'scale-105', 'bg-amber-100');
             }, 1000);
@@ -539,8 +838,10 @@
             setTimeout(() => {
                 slot2.classList.remove('ring-4', 'ring-yellow-300', 'scale-105', 'bg-amber-100');
                 
-                const val1 = droppedCards[0].value;
-                const val2 = droppedCards[1].value;
+                const card1 = droppedCards[0];
+                const card2 = droppedCards[1];
+                const val1 = card1.value;
+                const val2 = card2.value;
                 const sum = val1 + val2;
 
                 resultValue.innerText = sum;
@@ -548,17 +849,25 @@
                 resultDisplay.classList.add('flex');
                 
                 if (sum === targetNumber) {
-                    score += 1;
+                    playSound('correct');
+                    
+                    // Score based on remaining time (e.g., base 1 point + bonus points from remaining seconds)
+                    const timeBonus = Math.max(1, Math.floor(timeLeft / 5));
+                    const earnedScore = 1 + timeBonus;
+                    score += earnedScore;
                     document.getElementById('score').innerText = score;
-                    msgEl.innerText = `🎉 答對了好棒！ ${val1} + ${val2} = ${sum} (+1分)`;
-                    msgEl.className = "mt-2 text-xs font-black text-emerald-300 h-5 transition-all duration-300 drop-shadow";
+                    
+                    timeLeft = 60;
+                    document.getElementById('timer').innerText = timeLeft;
+
+                    msgEl.innerText = `🎉 答對了！ ${val1} + ${val2} = ${sum} (+${earnedScore}分，時間重置 60 秒！)`;
+                    msgEl.className = "mt-2.5 text-xs font-black text-emerald-300 h-6 transition-all duration-300 drop-shadow";
 
                     const targetZone = document.getElementById('target-drop-zone');
                     const targetImg = document.getElementById('target-img');
                     const heartsGrid = document.getElementById('hearts-grid');
                     const heartSpans = heartsGrid.children;
 
-                    // Helper to fly a single card from a slot to the monster center
                     function flySingleCard(slotEl, cardImgUrl, onHitCallback) {
                         const targetRect = targetZone.getBoundingClientRect();
                         const slotRect = slotEl.getBoundingClientRect();
@@ -584,8 +893,8 @@
                         flyer.innerHTML = `<img src="${cardImgUrl}" class="w-full h-full object-contain drop-shadow-2xl">`;
                         document.body.appendChild(flyer);
 
-                        // Hide original slot card while flying
                         slotEl.style.opacity = '0';
+                        playSound('fly');
 
                         requestAnimationFrame(() => {
                             requestAnimationFrame(() => {
@@ -595,18 +904,19 @@
 
                         setTimeout(() => {
                             flyer.remove();
+                            playSound('hit');
                             targetImg.classList.add('target-hit-anim');
                             setTimeout(() => targetImg.classList.remove('target-hit-anim'), 450);
                             if (onHitCallback) onHitCallback();
                         }, 550);
                     }
 
-                    // Helper to turn hearts black sequentially from startIndex to startIndex + count
                     function deductHearts(startIndex, count, onCompleteCallback) {
                         for (let i = 0; i < count; i++) {
                             const heartIdx = startIndex + i;
                             if (heartIdx < heartSpans.length) {
                                 setTimeout(() => {
+                                    playSound('heart', heartIdx);
                                     heartSpans[heartIdx].innerHTML = "🖤";
                                     heartSpans[heartIdx].className = "text-base text-slate-800 drop-shadow transform scale-125 transition-all";
                                 }, i * 150);
@@ -617,10 +927,9 @@
                         }, count * 150 + 250);
                     }
 
-                    // Step 1: Fly Card 1 -> Deduct val1 hearts -> Step 2: Fly Card 2 -> Deduct val2 hearts
-                    flySingleCard(slot1, droppedCards[0].img, () => {
+                    flySingleCard(slot1, card1.img, () => {
                         deductHearts(0, val1, () => {
-                            flySingleCard(slot2, droppedCards[1].img, () => {
+                            flySingleCard(slot2, card2.img, () => {
                                 deductHearts(val1, val2, () => {
                                     setTimeout(() => {
                                         slot1.style.opacity = '1';
@@ -628,11 +937,42 @@
                                         droppedCards = [null, null];
                                         resultDisplay.classList.add('hidden');
                                         resultDisplay.classList.remove('flex');
-                                        msgEl.innerText = "請將 2 張卡片拖進下方對應格子";
-                                        msgEl.className = "mt-2 text-xs font-bold text-yellow-200 h-5 transition-all duration-300 drop-shadow";
-                                        isEvaluating = false;
-                                        updateSlots();
-                                        generateTarget();
+                                        
+                                        if (score >= 40 && currentLevel === 1) {
+                                            currentLevel = 2;
+                                            isLevel2 = true;
+                                            isLevelingUp = true;
+                                            playSound('levelup');
+                                            const lvlModal = document.getElementById('level-up-modal');
+                                            const lvlBadge = document.getElementById('level-badge');
+                                            const slotLabel = document.getElementById('slot-instruction-label');
+                                            if (lvlModal) {
+                                                lvlModal.classList.remove('hidden');
+                                                lvlModal.classList.add('flex');
+                                            }
+                                            if (lvlBadge) {
+                                                lvlBadge.classList.remove('hidden');
+                                            }
+                                            if (slotLabel) {
+                                                slotLabel.innerHTML = `<span>⚔️</span> <span>用減法找出格子 2 的卡片</span>`;
+                                            }
+                                            setTimeout(() => {
+                                                if (lvlModal) {
+                                                    lvlModal.classList.add('hidden');
+                                                    lvlModal.classList.remove('flex');
+                                                }
+                                                isLevelingUp = false;
+                                                isEvaluating = false;
+                                                updateSlots();
+                                                generateTarget();
+                                            }, 2400);
+                                        } else {
+                                            msgEl.innerText = currentLevel === 2 ? "請用減法找出格子 2 的卡片" : "請將 2 張卡片拖進下方對應格子";
+                                            msgEl.className = "mt-2.5 text-sm font-bold text-yellow-200 h-6 transition-all duration-300 drop-shadow";
+                                            isEvaluating = false;
+                                            updateSlots();
+                                            generateTarget();
+                                        }
                                     }, 300);
                                 });
                             });
@@ -640,15 +980,20 @@
                     });
 
                 } else {
+                    playSound('wrong');
                     msgEl.innerText = `❌ 總和是 ${sum}，不是 ${targetNumber}，再試一次！`;
-                    msgEl.className = "mt-2 text-xs font-black text-rose-300 h-5 transition-all duration-300 drop-shadow";
+                    msgEl.className = "mt-2.5 text-sm font-black text-rose-300 h-6 transition-all duration-300 drop-shadow";
 
                     setTimeout(() => {
-                        droppedCards = [null, null];
+                        if (currentLevel === 2) {
+                            droppedCards[1] = null;
+                        } else {
+                            droppedCards = [null, null];
+                        }
                         resultDisplay.classList.add('hidden');
                         resultDisplay.classList.remove('flex');
-                        msgEl.innerText = "請將 2 張卡片拖進下方對應格子";
-                        msgEl.className = "mt-2 text-xs font-bold text-yellow-200 h-5 transition-all duration-300 drop-shadow";
+                        msgEl.innerText = currentLevel === 2 ? `👾 怪獸出了 ${droppedCards[0].value}！請用減法 (${targetNumber} - ${droppedCards[0].value}) 找出格子 2 的卡！` : "請將 2 張卡片拖進下方對應格子";
+                        msgEl.className = "mt-2.5 text-sm font-bold text-yellow-200 h-6 transition-all duration-300 drop-shadow";
                         isEvaluating = false;
                         updateSlots();
                     }, 1500);
@@ -658,16 +1003,22 @@
 
         function clearSelection() {
             if (!gameActive || isEvaluating) return;
-            droppedCards = [null, null];
+            playSound('hover');
+            if (currentLevel === 2) {
+                droppedCards[1] = null;
+            } else {
+                droppedCards = [null, null];
+            }
             hideFloatingCard();
             updateSlots();
             const msgEl = document.getElementById('status-message');
-            msgEl.innerText = "請將 2 張卡片拖進下方對應格子";
-            msgEl.className = "mt-2 text-xs font-bold text-yellow-200 h-5 transition-all duration-300 drop-shadow";
+            msgEl.innerText = currentLevel === 2 && droppedCards[0] ? `👾 怪獸出了 ${droppedCards[0].value}！請用減法 (${targetNumber} - ${droppedCards[0].value}) 找出格子 2 的卡！` : "請將 2 張卡片拖進下方對應格子";
+            msgEl.className = "mt-2.5 text-sm font-bold text-yellow-200 h-6 transition-all duration-300 drop-shadow";
         }
 
         function shuffleCards() {
             if (!gameActive || isEvaluating) return;
+            playSound('drop');
             droppedCards = [null, null];
             hideFloatingCard();
             updateSlots();
@@ -676,52 +1027,11 @@
             const msgEl = document.getElementById('status-message');
             msgEl.innerText = "🔄 已切換新目標數字！";
             setTimeout(() => {
-                msgEl.innerText = "請將 2 張卡片拖進下方對應格子";
-            }, 1000);
-        }
-
-        function startGame() {
-            document.getElementById('start-modal').style.display = 'none';
-            score = 0;
-            timeLeft = 60;
-            isEvaluating = false;
-            document.getElementById('score').innerText = score;
-            document.getElementById('timer').innerText = timeLeft + 's';
-            
-            droppedCards = [null, null];
-            gameActive = true;
-
-            generateTarget();
-            initHand();
-            updateSlots();
-
-            if (timerInterval) clearInterval(timerInterval);
-            timerInterval = setInterval(() => {
-                timeLeft--;
-                document.getElementById('timer').innerText = timeLeft + 's';
-                if (timeLeft <= 0) {
-                    clearInterval(timerInterval);
-                    endGame();
+                if (currentLevel === 1) {
+                    msgEl.innerText = "請將 2 張卡片拖進下方對應格子";
                 }
             }, 1000);
         }
-
-        function endGame() {
-            gameActive = false;
-            hideFloatingCard();
-            document.getElementById('final-score').innerText = score;
-            document.getElementById('game-over-modal').style.display = 'flex';
-        }
-
-        function restartGame() {
-            document.getElementById('game-over-modal').style.display = 'none';
-            startGame();
-        }
-
-        window.onload = function() {
-            resizeGame();
-            initHand();
-        };
     </script>
 </body>
 </html>
